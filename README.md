@@ -183,8 +183,8 @@ npm run build
 ## 📧 Contacto
 
 Para consultas sobre el proyecto:
-- Email: [tu-email@example.com]
-- Teléfono: [tu-teléfono]
+- Email: hazelalmaraz91@gmail.com
+- Teléfono: 7731135626
 
 ## 📄 Licencia
 
