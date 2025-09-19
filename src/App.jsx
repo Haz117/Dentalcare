@@ -7,26 +7,34 @@ import Contact from './components/Contact'
 import Footer from './components/Footer'
 import AppointmentBooking from './pages/AppointmentBooking'
 import AdminPanel from './pages/AdminPanel'
+import ProtectedRoute from './components/ProtectedRoute'
+import { AuthProvider } from './contexts/AuthContext'
 import './index.css'
 
 function App() {
   return (
-    <div className="App">
-      <Header />
-      <Routes>
-        <Route path="/" element={
-          <main>
-            <Hero />
-            <Services />
-            <About />
-            <Contact />
-          </main>
-        } />
-        <Route path="/agendar" element={<AppointmentBooking />} />
-        <Route path="/admin" element={<AdminPanel />} />
-      </Routes>
-      <Footer />
-    </div>
+    <AuthProvider>
+      <div className="App">
+        <Header />
+        <Routes>
+          <Route path="/" element={
+            <main>
+              <Hero />
+              <Services />
+              <About />
+              <Contact />
+            </main>
+          } />
+          <Route path="/agendar" element={<AppointmentBooking />} />
+          <Route path="/admin" element={
+            <ProtectedRoute requireAdmin={true}>
+              <AdminPanel />
+            </ProtectedRoute>
+          } />
+        </Routes>
+        <Footer />
+      </div>
+    </AuthProvider>
   )
 }
 

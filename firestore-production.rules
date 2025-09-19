@@ -1,0 +1,197 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ========================================
+    // REGLAS AVANZADAS PARA PRODUCCIÓN
+    // ========================================
+    
+    // Colección de Citas (Appointments)
+    match /appointments/{appointmentId} {
+      
+      // Crear cita: Solo usuarios autenticados con datos válidos
+      allow create: if request.auth != null 
+        && isValidNewAppointment(request.resource.data)
+        && request.auth.uid == request.resource.data.userId
+        && !hasExistingAppointment(request.resource.data.date, request.resource.data.time);
+      
+      // Leer cita: Solo el propietario o administrador
+      allow read: if request.auth != null 
+        && (request.auth.uid == resource.data.userId || isAdmin());
+      
+      // Actualizar cita: Solo el propietario con datos válidos
+      allow update: if request.auth != null 
+        && request.auth.uid == resource.data.userId
+        && isValidAppointmentUpdate(request.resource.data, resource.data)
+        && !isAppointmentLocked(resource.data);
+      
+      // Eliminar cita: Solo el propietario si la cita no está confirmada
+      allow delete: if request.auth != null 
+        && request.auth.uid == resource.data.userId
+        && resource.data.status in ['pending', 'cancelled'];
+    }
+    
+    // Colección de Usuarios
+    match /users/{userId} {
+      
+      // Crear perfil: Solo el usuario propietario
+      allow create: if request.auth != null 
+        && request.auth.uid == userId
+        && isValidUserProfile(request.resource.data);
+      
+      // Leer perfil: Solo el propietario o administrador
+      allow read: if request.auth != null 
+        && (request.auth.uid == userId || isAdmin());
+      
+      // Actualizar perfil: Solo el propietario con datos válidos
+      allow update: if request.auth != null 
+        && request.auth.uid == userId
+        && isValidUserProfileUpdate(request.resource.data, resource.data);
+      
+      // Eliminar perfil: Solo el propietario
+      allow delete: if request.auth != null 
+        && request.auth.uid == userId;
+    }
+    
+    // Colección de Historial Médico
+    match /medical_history/{userId} {
+      allow read, write: if request.auth != null 
+        && (request.auth.uid == userId || isAdmin())
+        && isValidMedicalHistory(request.resource.data);
+    }
+    
+    // Configuración del Consultorio
+    match /clinic_config/{document} {
+      // Solo lectura para usuarios autenticados
+      allow read: if request.auth != null;
+      
+      // Solo administradores pueden modificar
+      allow write: if request.auth != null && isAdmin();
+    }
+    
+    // Horarios Disponibles
+    match /available_slots/{date} {
+      // Todos pueden leer horarios disponibles
+      allow read: if request.auth != null;
+      
+      // Solo administradores pueden modificar horarios
+      allow write: if request.auth != null && isAdmin();
+    }
+    
+    // ========================================
+    // FUNCIONES DE VALIDACIÓN
+    // ========================================
+    
+    // Validar nueva cita
+    function isValidNewAppointment(data) {
+      let requiredFields = ['date', 'time', 'service', 'userId', 'firstName', 'lastName', 'email', 'phone'];
+      let validStatuses = ['pending'];
+      
+      return data.keys().hasAll(requiredFields)
+        && data.date is timestamp
+        && data.time is string
+        && data.service is string
+        && data.userId == request.auth.uid
+        && data.status in validStatuses
+        && isValidEmail(data.email)
+        && isValidPhone(data.phone)
+        && isValidService(data.service)
+        && isFutureDate(data.date)
+        && isValidTimeSlot(data.time);
+    }
+    
+    // Validar actualización de cita
+    function isValidAppointmentUpdate(newData, oldData) {
+      let allowedStatuses = ['pending', 'confirmed', 'cancelled', 'completed'];
+      
+      return newData.keys().hasAll(['date', 'time', 'service', 'userId', 'status'])
+        && newData.userId == oldData.userId // No se puede cambiar el usuario
+        && newData.status in allowedStatuses
+        && (
+          // Si cambia la fecha/hora, debe ser futura
+          (newData.date == oldData.date && newData.time == oldData.time) ||
+          isFutureDate(newData.date)
+        );
+    }
+    
+    // Validar perfil de usuario
+    function isValidUserProfile(data) {
+      let requiredFields = ['email', 'firstName', 'lastName'];
+      
+      return data.keys().hasAll(requiredFields)
+        && data.email == request.auth.token.email
+        && data.firstName is string
+        && data.lastName is string
+        && data.firstName.size() > 0
+        && data.lastName.size() > 0
+        && isValidEmail(data.email);
+    }
+    
+    // Validar actualización de perfil
+    function isValidUserProfileUpdate(newData, oldData) {
+      return isValidUserProfile(newData)
+        && newData.email == oldData.email; // Email no se puede cambiar
+    }
+    
+    // Validar historial médico
+    function isValidMedicalHistory(data) {
+      return data.keys().hasAll(['userId', 'allergies', 'medications', 'conditions'])
+        && data.userId is string
+        && data.allergies is list
+        && data.medications is list
+        && data.conditions is list;
+    }
+    
+    // ========================================
+    // FUNCIONES AUXILIARES
+    // ========================================
+    
+    // Verificar si es administrador
+    function isAdmin() {
+      return request.auth != null 
+        && request.auth.token.admin == true;
+    }
+    
+    // Validar email
+    function isValidEmail(email) {
+      return email is string 
+        && email.matches('[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}');
+    }
+    
+    // Validar teléfono
+    function isValidPhone(phone) {
+      return phone is string 
+        && phone.matches('[0-9+\\-\\s\\(\\)]{10,15}');
+    }
+    
+    // Validar servicio
+    function isValidService(service) {
+      let validServices = ['consultation', 'cleaning', 'whitening', 'filling', 'extraction'];
+      return service in validServices;
+    }
+    
+    // Verificar fecha futura
+    function isFutureDate(date) {
+      return date > request.time;
+    }
+    
+    // Validar slot de tiempo
+    function isValidTimeSlot(time) {
+      let validTimes = ['09:00', '10:00', '11:00', '12:00', '14:00', '15:00', '16:00', '17:00'];
+      return time in validTimes;
+    }
+    
+    // Verificar si la cita está bloqueada para cambios
+    function isAppointmentLocked(data) {
+      return data.status == 'completed' 
+        || (data.status == 'confirmed' && data.date < request.time);
+    }
+    
+    // Verificar cita existente (simplificado - en producción usarías una consulta más compleja)
+    function hasExistingAppointment(date, time) {
+      // Esta función es un placeholder
+      // En la práctica, usarías cloud functions para verificar conflictos
+      return false;
+    }
+  }
+}

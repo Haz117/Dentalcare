@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { User, Clock, CreditCard, Check, ArrowLeft, ArrowRight, Calendar as CalendarIcon } from 'lucide-react';
+import { User, Clock, CreditCard, Check, ArrowLeft, ArrowRight, Calendar as CalendarIcon, AlertCircle } from 'lucide-react';
 import Modal from './Modal';
+import { createAppointment } from '../services/firebaseService';
+import { getCurrentUser } from '../services/authService';
 
 const AppointmentForm = ({ isOpen, onClose, selectedDate, selectedTime, onSuccess }) => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -23,6 +25,74 @@ const AppointmentForm = ({ isOpen, onClose, selectedDate, selectedTime, onSucces
     emergencyContact: '',
     medicalHistory: ''
   });
+
+  const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
+
+  // Validation functions
+  const validateEmail = (email) => {
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!email) return 'El email es requerido';
+    if (!emailRegex.test(email)) return 'Ingresa un email válido (ej: nombre@ejemplo.com)';
+    return '';
+  };
+
+  const validatePhone = (phone) => {
+    // Remove all non-digit characters for validation
+    const cleanPhone = phone.replace(/\D/g, '');
+    if (!phone) return 'El teléfono es requerido';
+    
+    // Mexican phone validation: 10 digits or +52 followed by 10 digits
+    if (phone.startsWith('+52')) {
+      if (cleanPhone.length !== 12) return 'Teléfono debe tener 10 dígitos después de +52';
+    } else if (cleanPhone.length !== 10) {
+      return 'Teléfono debe tener 10 dígitos (ej: 5551234567)';
+    }
+    return '';
+  };
+
+  const validateName = (name, fieldName) => {
+    const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
+    if (!name) return `${fieldName} es requerido`;
+    if (!nameRegex.test(name)) return `${fieldName} solo debe contener letras y espacios`;
+    if (name.length < 2) return `${fieldName} debe tener al menos 2 caracteres`;
+    return '';
+  };
+
+  const validateEmergencyContact = (phone) => {
+    if (!phone) return ''; // Emergency contact is optional
+    const cleanPhone = phone.replace(/\D/g, '');
+    if (phone.startsWith('+52')) {
+      if (cleanPhone.length !== 12) return 'Teléfono debe tener 10 dígitos después de +52';
+    } else if (cleanPhone.length !== 10) {
+      return 'Teléfono debe tener 10 dígitos (ej: 5551234567)';
+    }
+    return '';
+  };
+
+  const validateField = (field, value) => {
+    let error = '';
+    switch (field) {
+      case 'firstName':
+        error = validateName(value, 'El nombre');
+        break;
+      case 'lastName':
+        error = validateName(value, 'Los apellidos');
+        break;
+      case 'email':
+        error = validateEmail(value);
+        break;
+      case 'phone':
+        error = validatePhone(value);
+        break;
+      case 'emergencyContact':
+        error = validateEmergencyContact(value);
+        break;
+      default:
+        break;
+    }
+    return error;
+  };
 
   const services = [
     {
@@ -76,9 +146,59 @@ const AppointmentForm = ({ isOpen, onClose, selectedDate, selectedTime, onSucces
   ];
 
   const handleInputChange = (field, value) => {
+    // Format phone number as user types
+    if (field === 'phone' || field === 'emergencyContact') {
+      value = formatPhoneNumber(value);
+    }
+
     setFormData(prev => ({
       ...prev,
       [field]: value
+    }));
+
+    // Mark field as touched
+    setTouched(prev => ({
+      ...prev,
+      [field]: true
+    }));
+
+    // Validate field in real-time
+    const error = validateField(field, value);
+    setErrors(prev => ({
+      ...prev,
+      [field]: error
+    }));
+  };
+
+  const formatPhoneNumber = (value) => {
+    // Remove all non-digit characters
+    const cleaned = value.replace(/\D/g, '');
+    
+    // Limit to 10 digits for local numbers or 12 for +52 numbers
+    let formatted = cleaned;
+    
+    if (cleaned.length <= 10) {
+      // Format as (XXX) XXX-XXXX
+      if (cleaned.length >= 6) {
+        formatted = `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6, 10)}`;
+      } else if (cleaned.length >= 3) {
+        formatted = `(${cleaned.slice(0, 3)}) ${cleaned.slice(3)}`;
+      }
+    }
+    
+    return formatted;
+  };
+
+  const handleBlur = (field) => {
+    setTouched(prev => ({
+      ...prev,
+      [field]: true
+    }));
+    
+    const error = validateField(field, formData[field]);
+    setErrors(prev => ({
+      ...prev,
+      [field]: error
     }));
   };
 
@@ -90,8 +210,100 @@ const AppointmentForm = ({ isOpen, onClose, selectedDate, selectedTime, onSucces
 
   const nextStep = () => {
     if (currentStep < 3) {
+      // Validate current step before proceeding
+      let isValid = true;
+      const newErrors = {};
+
+      if (currentStep === 1) {
+        if (!formData.service) {
+          alert('Por favor selecciona un servicio');
+          return;
+        }
+      }
+
+      if (currentStep === 2) {
+        // Validate all required fields in step 2
+        const fieldsToValidate = ['firstName', 'lastName', 'email', 'phone'];
+        
+        fieldsToValidate.forEach(field => {
+          const error = validateField(field, formData[field]);
+          if (error) {
+            newErrors[field] = error;
+            isValid = false;
+          }
+        });
+
+        // Also validate emergency contact if provided
+        if (formData.emergencyContact) {
+          const emergencyError = validateField('emergencyContact', formData.emergencyContact);
+          if (emergencyError) {
+            newErrors.emergencyContact = emergencyError;
+            isValid = false;
+          }
+        }
+
+        if (!isValid) {
+          setErrors(prev => ({ ...prev, ...newErrors }));
+          setTouched(prev => ({
+            ...prev,
+            firstName: true,
+            lastName: true,
+            email: true,
+            phone: true,
+            emergencyContact: true
+          }));
+          return;
+        }
+      }
+
       setCurrentStep(currentStep + 1);
     }
+  };
+
+  const validateAllFields = () => {
+    const newErrors = {};
+    let isValid = true;
+
+    // Validate service selection
+    if (!formData.service) {
+      alert('Por favor selecciona un servicio');
+      setCurrentStep(1);
+      return false;
+    }
+
+    // Validate personal information
+    const requiredFields = ['firstName', 'lastName', 'email', 'phone'];
+    requiredFields.forEach(field => {
+      const error = validateField(field, formData[field]);
+      if (error) {
+        newErrors[field] = error;
+        isValid = false;
+      }
+    });
+
+    // Validate emergency contact if provided
+    if (formData.emergencyContact) {
+      const emergencyError = validateField('emergencyContact', formData.emergencyContact);
+      if (emergencyError) {
+        newErrors.emergencyContact = emergencyError;
+        isValid = false;
+      }
+    }
+
+    if (!isValid) {
+      setErrors(prev => ({ ...prev, ...newErrors }));
+      setTouched(prev => ({
+        ...prev,
+        firstName: true,
+        lastName: true,
+        email: true,
+        phone: true,
+        emergencyContact: true
+      }));
+      setCurrentStep(2); // Go back to personal info step
+    }
+
+    return isValid;
   };
 
   const prevStep = () => {
@@ -100,32 +312,65 @@ const AppointmentForm = ({ isOpen, onClose, selectedDate, selectedTime, onSucces
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    // Validate all fields before submission
+    if (!validateAllFields()) {
+      alert('Por favor corrige los errores en el formulario antes de continuar');
+      return;
+    }
+
+    if (!selectedDate || !selectedTime) {
+      alert('Por favor selecciona fecha y hora para la cita');
+      return;
+    }
+
+    const currentUser = getCurrentUser();
+    
     const appointmentData = {
       ...formData,
       date: selectedDate,
-      time: selectedTime
+      time: selectedTime,
+      userId: currentUser ? currentUser.uid : null,
+      userEmail: currentUser ? currentUser.email : formData.email,
+      status: 'pending'
     };
-    console.log('Appointment Data:', appointmentData);
-    alert('¡Cita agendada exitosamente! Te enviaremos un email de confirmación.');
-    onSuccess && onSuccess(appointmentData);
-    onClose();
-    // Reset form
-    setFormData({
-      service: '',
-      duration: '',
-      price: '',
-      firstName: '',
-      lastName: '',
-      email: '',
-      phone: '',
-      birthDate: '',
-      paymentMethod: 'pay-later',
-      notes: '',
-      emergencyContact: '',
-      medicalHistory: ''
-    });
-    setCurrentStep(1);
+
+    try {
+      // Guardar la cita en Firebase
+      const result = await createAppointment(appointmentData);
+      
+      if (result.success) {
+        console.log('Appointment saved to Firebase:', result.id);
+        alert('¡Cita agendada exitosamente! Te enviaremos un email de confirmación.');
+        onSuccess && onSuccess({ ...appointmentData, id: result.id });
+        onClose();
+        
+        // Reset form
+        setFormData({
+          service: '',
+          duration: '',
+          price: '',
+          firstName: '',
+          lastName: '',
+          email: '',
+          phone: '',
+          birthDate: '',
+          paymentMethod: 'pay-later',
+          notes: '',
+          emergencyContact: '',
+          medicalHistory: ''
+        });
+        setErrors({});
+        setTouched({});
+        setCurrentStep(1);
+      } else {
+        console.error('Error saving appointment:', result.error);
+        alert('Error al agendar la cita. Por favor intenta de nuevo.');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error al agendar la cita. Por favor intenta de nuevo.');
+    }
   };
 
   const renderStepContent = () => {
@@ -191,10 +436,21 @@ const AppointmentForm = ({ isOpen, onClose, selectedDate, selectedTime, onSucces
                   type="text"
                   value={formData.firstName}
                   onChange={(e) => handleInputChange('firstName', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-dental-blue focus:border-transparent"
+                  onBlur={() => handleBlur('firstName')}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-dental-blue focus:border-transparent ${
+                    errors.firstName && touched.firstName 
+                      ? 'border-red-500 bg-red-50' 
+                      : 'border-gray-300'
+                  }`}
                   placeholder="Tu nombre"
                   required
                 />
+                {errors.firstName && touched.firstName && (
+                  <div className="flex items-center mt-1 text-red-600 text-sm">
+                    <AlertCircle className="w-4 h-4 mr-1" />
+                    {errors.firstName}
+                  </div>
+                )}
               </div>
 
               <div>
@@ -205,10 +461,21 @@ const AppointmentForm = ({ isOpen, onClose, selectedDate, selectedTime, onSucces
                   type="text"
                   value={formData.lastName}
                   onChange={(e) => handleInputChange('lastName', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-dental-blue focus:border-transparent"
+                  onBlur={() => handleBlur('lastName')}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-dental-blue focus:border-transparent ${
+                    errors.lastName && touched.lastName 
+                      ? 'border-red-500 bg-red-50' 
+                      : 'border-gray-300'
+                  }`}
                   placeholder="Tus apellidos"
                   required
                 />
+                {errors.lastName && touched.lastName && (
+                  <div className="flex items-center mt-1 text-red-600 text-sm">
+                    <AlertCircle className="w-4 h-4 mr-1" />
+                    {errors.lastName}
+                  </div>
+                )}
               </div>
 
               <div>
@@ -219,10 +486,21 @@ const AppointmentForm = ({ isOpen, onClose, selectedDate, selectedTime, onSucces
                   type="email"
                   value={formData.email}
                   onChange={(e) => handleInputChange('email', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-dental-blue focus:border-transparent"
+                  onBlur={() => handleBlur('email')}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-dental-blue focus:border-transparent ${
+                    errors.email && touched.email 
+                      ? 'border-red-500 bg-red-50' 
+                      : 'border-gray-300'
+                  }`}
                   placeholder="tu@email.com"
                   required
                 />
+                {errors.email && touched.email && (
+                  <div className="flex items-center mt-1 text-red-600 text-sm">
+                    <AlertCircle className="w-4 h-4 mr-1" />
+                    {errors.email}
+                  </div>
+                )}
               </div>
 
               <div>
@@ -233,10 +511,24 @@ const AppointmentForm = ({ isOpen, onClose, selectedDate, selectedTime, onSucces
                   type="tel"
                   value={formData.phone}
                   onChange={(e) => handleInputChange('phone', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-dental-blue focus:border-transparent"
-                  placeholder="+52 (555) 123-4567"
+                  onBlur={() => handleBlur('phone')}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-dental-blue focus:border-transparent ${
+                    errors.phone && touched.phone 
+                      ? 'border-red-500 bg-red-50' 
+                      : 'border-gray-300'
+                  }`}
+                  placeholder="(555) 123-4567"
                   required
                 />
+                {errors.phone && touched.phone && (
+                  <div className="flex items-center mt-1 text-red-600 text-sm">
+                    <AlertCircle className="w-4 h-4 mr-1" />
+                    {errors.phone}
+                  </div>
+                )}
+                <div className="text-xs text-gray-500 mt-1">
+                  Formato: 10 dígitos o +52 seguido de 10 dígitos
+                </div>
               </div>
 
               <div>
@@ -259,9 +551,23 @@ const AppointmentForm = ({ isOpen, onClose, selectedDate, selectedTime, onSucces
                   type="tel"
                   value={formData.emergencyContact}
                   onChange={(e) => handleInputChange('emergencyContact', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-dental-blue focus:border-transparent"
-                  placeholder="Número de emergencia"
+                  onBlur={() => handleBlur('emergencyContact')}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-dental-blue focus:border-transparent ${
+                    errors.emergencyContact && touched.emergencyContact 
+                      ? 'border-red-500 bg-red-50' 
+                      : 'border-gray-300'
+                  }`}
+                  placeholder="(555) 123-4567"
                 />
+                {errors.emergencyContact && touched.emergencyContact && (
+                  <div className="flex items-center mt-1 text-red-600 text-sm">
+                    <AlertCircle className="w-4 h-4 mr-1" />
+                    {errors.emergencyContact}
+                  </div>
+                )}
+                <div className="text-xs text-gray-500 mt-1">
+                  Opcional - Formato: 10 dígitos o +52 seguido de 10 dígitos
+                </div>
               </div>
 
               <div className="md:col-span-2">
@@ -490,10 +796,7 @@ const AppointmentForm = ({ isOpen, onClose, selectedDate, selectedTime, onSucces
         {currentStep < 3 ? (
           <button
             onClick={nextStep}
-            disabled={
-              (currentStep === 1 && !formData.service) ||
-              (currentStep === 2 && (!formData.firstName || !formData.lastName || !formData.email || !formData.phone))
-            }
+            disabled={currentStep === 1 && !formData.service}
             className="flex items-center space-x-2 btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <span>Siguiente</span>

@@ -1,0 +1,87 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Reglas para la colección de citas (appointments)
+    match /appointments/{appointmentId} {
+      // Los usuarios autenticados pueden crear citas
+      allow create: if request.auth != null 
+        && isValidAppointment(resource.data)
+        && request.auth.uid == resource.data.userId;
+      
+      // Los usuarios pueden leer sus propias citas
+      allow read: if request.auth != null 
+        && request.auth.uid == resource.data.userId;
+      
+      // Solo el propietario puede actualizar su cita
+      allow update: if request.auth != null 
+        && request.auth.uid == resource.data.userId
+        && isValidAppointmentUpdate(request.resource.data);
+      
+      // Solo el propietario puede eliminar su cita
+      allow delete: if request.auth != null 
+        && request.auth.uid == resource.data.userId;
+    }
+    
+    // Reglas para perfiles de usuario
+    match /users/{userId} {
+      // Solo el usuario puede crear su propio perfil
+      allow create: if request.auth != null 
+        && request.auth.uid == userId
+        && isValidUserProfile(request.resource.data);
+      
+      // Los usuarios pueden leer su propio perfil
+      allow read: if request.auth != null 
+        && request.auth.uid == userId;
+      
+      // Solo el usuario puede actualizar su propio perfil
+      allow update: if request.auth != null 
+        && request.auth.uid == userId
+        && isValidUserProfile(request.resource.data);
+      
+      // Los usuarios pueden eliminar su propio perfil
+      allow delete: if request.auth != null 
+        && request.auth.uid == userId;
+    }
+    
+    // Reglas para configuración del consultorio (solo administradores)
+    match /clinic/{document} {
+      // Solo administradores pueden leer/escribir configuración
+      allow read, write: if request.auth != null 
+        && isAdmin(request.auth.uid);
+    }
+    
+    // Funciones auxiliares para validación
+    function isValidAppointment(data) {
+      return data.keys().hasAll(['date', 'time', 'service', 'userId', 'status'])
+        && data.date is timestamp
+        && data.time is string
+        && data.service is string
+        && data.userId is string
+        && data.status in ['pending', 'confirmed', 'cancelled', 'completed']
+        && data.userId == request.auth.uid;
+    }
+    
+    function isValidAppointmentUpdate(data) {
+      return data.keys().hasAll(['date', 'time', 'service', 'userId', 'status'])
+        && data.date is timestamp
+        && data.time is string
+        && data.service is string
+        && data.userId is string
+        && data.status in ['pending', 'confirmed', 'cancelled', 'completed'];
+    }
+    
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['email', 'firstName', 'lastName'])
+        && data.email is string
+        && data.firstName is string
+        && data.lastName is string
+        && data.email == request.auth.token.email;
+    }
+    
+    function isAdmin(uid) {
+      // Lista de UIDs de administradores (puedes modificar esto)
+      return uid in ['ADMIN_UID_1', 'ADMIN_UID_2'];
+    }
+  }
+}

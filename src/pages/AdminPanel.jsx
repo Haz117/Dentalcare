@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Calendar, Clock, User, Phone, Mail, MapPin, Filter, Search, CheckCircle, XCircle, Edit, Eye, AlertCircle, Users, CalendarDays, TrendingUp } from 'lucide-react';
 import { format, parseISO, isToday, isTomorrow, isYesterday } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { getAppointmentsForAdmin, updateAppointmentStatus, subscribeToAppointmentsForAdmin, getAppointmentStats } from '../services/appointmentService';
 
 const AdminPanel = () => {
   const [appointments, setAppointments] = useState([]);
@@ -11,94 +12,45 @@ const AdminPanel = () => {
   const [dateFilter, setDateFilter] = useState('all');
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    total: 0,
+    pending: 0,
+    confirmed: 0,
+    completed: 0,
+    cancelled: 0,
+    today: 0,
+    tomorrow: 0
+  });
 
-  // Simulación de datos de citas (en una app real vendría de la base de datos)
+  // Cargar citas reales desde Firebase
   useEffect(() => {
-    const mockAppointments = [
-      {
-        id: 1,
-        date: '2025-09-16',
-        time: '9:00 AM',
-        service: 'Limpieza Dental',
-        patient: {
-          name: 'María González',
-          email: 'maria@email.com',
-          phone: '(555) 123-4567',
-          address: 'Calle Principal 123, Ciudad'
-        },
-        status: 'confirmed',
-        paymentMethod: 'Efectivo',
-        notes: 'Primera visita, revisar historial médico',
-        createdAt: '2025-09-15T10:30:00'
-      },
-      {
-        id: 2,
-        date: '2025-09-16',
-        time: '2:30 PM',
-        service: 'Consulta General',
-        patient: {
-          name: 'Carlos Ruiz',
-          email: 'carlos@email.com',
-          phone: '(555) 987-6543',
-          address: 'Avenida Central 456, Ciudad'
-        },
-        status: 'pending',
-        paymentMethod: 'Tarjeta',
-        notes: 'Dolor de muela, urgente',
-        createdAt: '2025-09-16T08:15:00'
-      },
-      {
-        id: 3,
-        date: '2025-09-17',
-        time: '10:00 AM',
-        service: 'Blanqueamiento',
-        patient: {
-          name: 'Ana López',
-          email: 'ana@email.com',
-          phone: '(555) 456-7890',
-          address: 'Plaza Mayor 789, Ciudad'
-        },
-        status: 'confirmed',
-        paymentMethod: 'Transferencia',
-        notes: 'Tratamiento de seguimiento',
-        createdAt: '2025-09-15T16:45:00'
-      },
-      {
-        id: 4,
-        date: '2025-09-15',
-        time: '4:00 PM',
-        service: 'Extracción',
-        patient: {
-          name: 'Pedro Martín',
-          email: 'pedro@email.com',
-          phone: '(555) 321-0987',
-          address: 'Calle Secundaria 321, Ciudad'
-        },
-        status: 'completed',
-        paymentMethod: 'Efectivo',
-        notes: 'Extracción de muela del juicio',
-        createdAt: '2025-09-14T12:20:00'
-      },
-      {
-        id: 5,
-        date: '2025-09-18',
-        time: '11:30 AM',
-        service: 'Ortodoncia',
-        patient: {
-          name: 'Laura Fernández',
-          email: 'laura@email.com',
-          phone: '(555) 654-3210',
-          address: 'Barrio Norte 654, Ciudad'
-        },
-        status: 'cancelled',
-        paymentMethod: 'Tarjeta',
-        notes: 'Cancelada por el paciente',
-        createdAt: '2025-09-16T09:10:00'
+    const loadAppointments = async () => {
+      setLoading(true);
+      try {
+        const result = await getAppointmentsForAdmin();
+        if (result.success) {
+          setAppointments(result.appointments);
+          setStats(getAppointmentStats(result.appointments));
+        } else {
+          console.error('Error loading appointments:', result.error);
+        }
+      } catch (error) {
+        console.error('Error:', error);
+      } finally {
+        setLoading(false);
       }
-    ];
-    
-    setAppointments(mockAppointments);
-    setFilteredAppointments(mockAppointments);
+    };
+
+    loadAppointments();
+
+    // Suscribirse a cambios en tiempo real
+    const unsubscribe = subscribeToAppointmentsForAdmin((appointments) => {
+      setAppointments(appointments);
+      setStats(getAppointmentStats(appointments));
+    });
+
+    return () => unsubscribe();
   }, []);
 
   // Filtrar citas
@@ -165,14 +117,20 @@ const AdminPanel = () => {
     return format(date, 'dd/MM/yyyy', { locale: es });
   };
 
-  const handleStatusChange = (appointmentId, newStatus) => {
-    setAppointments(prev =>
-      prev.map(appointment =>
-        appointment.id === appointmentId
-          ? { ...appointment, status: newStatus }
-          : appointment
-      )
-    );
+  const handleStatusChange = async (appointmentId, newStatus) => {
+    try {
+      const result = await updateAppointmentStatus(appointmentId, newStatus);
+      if (result.success) {
+        // El estado se actualizará automáticamente a través de la suscripción en tiempo real
+        console.log('Status updated successfully');
+      } else {
+        console.error('Error updating status:', result.error);
+        alert('Error al actualizar el estado de la cita');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error al actualizar el estado de la cita');
+    }
   };
 
   const showAppointmentDetails = (appointment) => {
@@ -180,13 +138,16 @@ const AdminPanel = () => {
     setShowDetailsModal(true);
   };
 
-  // Estadísticas básicas
-  const stats = {
-    total: appointments.length,
-    today: appointments.filter(apt => isToday(parseISO(apt.date + 'T00:00:00'))).length,
-    pending: appointments.filter(apt => apt.status === 'pending').length,
-    completed: appointments.filter(apt => apt.status === 'completed').length
-  };
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-dental-blue mx-auto mb-4"></div>
+          <p className="text-dental-gray">Cargando citas...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white">

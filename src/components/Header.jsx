@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Menu, X, Phone, Mail, MapPin } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { isAdmin } = useAuth();
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -58,9 +60,15 @@ const Header = () => {
               <a href="#contacto" className="text-dental-darkgray hover:text-dental-blue px-3 py-2 text-sm font-medium transition-colors">
                 Contacto
               </a>
-              <Link to="/admin" className="text-dental-darkgray hover:text-dental-blue px-3 py-2 text-sm font-medium transition-colors">
-                Admin
-              </Link>
+              {isAdmin() ? (
+                <Link to="/admin" className="text-dental-darkgray hover:text-dental-blue px-3 py-2 text-sm font-medium transition-colors">
+                  Panel Admin
+                </Link>
+              ) : (
+                <Link to="/admin" className="text-red-600 hover:text-red-700 px-3 py-2 text-sm font-medium transition-colors">
+                  Acceso Admin
+                </Link>
+              )}
               <Link to="/agendar" className="btn-primary">
                 Agendar Cita
               </Link>
@@ -98,9 +106,15 @@ const Header = () => {
               <a href="#contacto" className="text-dental-darkgray hover:text-dental-blue block px-3 py-2 text-base font-medium">
                 Contacto
               </a>
-              <Link to="/admin" className="text-dental-darkgray hover:text-dental-blue block px-3 py-2 text-base font-medium">
-                Admin
-              </Link>
+              {isAdmin() ? (
+                <Link to="/admin" className="text-dental-darkgray hover:text-dental-blue block px-3 py-2 text-base font-medium">
+                  Panel Admin
+                </Link>
+              ) : (
+                <Link to="/admin" className="text-red-600 hover:text-red-700 block px-3 py-2 text-base font-medium">
+                  Acceso Admin
+                </Link>
+              )}
               <Link to="/agendar" className="btn-primary w-full mt-4 block text-center">
                 Agendar Cita
               </Link>
