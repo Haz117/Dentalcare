@@ -1,11 +1,16 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { User, Clock, CreditCard, Check, ArrowLeft, ArrowRight, Calendar as CalendarIcon, AlertCircle } from 'lucide-react';
 import Modal from './Modal';
+import LoadingSpinner from './LoadingSpinner';
+import { useFormValidation } from '../hooks/useError';
 import { createAppointment } from '../services/firebaseService';
 import { getCurrentUser } from '../services/authService';
 
 const AppointmentForm = ({ isOpen, onClose, selectedDate, selectedTime, onSuccess }) => {
   const [currentStep, setCurrentStep] = useState(1);
+  const [createAccount, setCreateAccount] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const { errors, validateField, clearErrors, clearFieldError } = useFormValidation();
   const [formData, setFormData] = useState({
     // Step 1: Service Selection
     service: '',
@@ -18,6 +23,7 @@ const AppointmentForm = ({ isOpen, onClose, selectedDate, selectedTime, onSucces
     email: '',
     phone: '',
     birthDate: '',
+    password: '', // Solo si createAccount es true
     
     // Step 3: Payment & Additional
     paymentMethod: 'pay-later',
@@ -26,41 +32,31 @@ const AppointmentForm = ({ isOpen, onClose, selectedDate, selectedTime, onSucces
     medicalHistory: ''
   });
 
-  const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
 
-  // Validation functions
-  const validateEmail = (email) => {
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    if (!email) return 'El email es requerido';
-    if (!emailRegex.test(email)) return 'Ingresa un email válido (ej: nombre@ejemplo.com)';
-    return '';
-  };
-
-  const validatePhone = (phone) => {
-    // Remove all non-digit characters for validation
+  // Funciones de validación personalizadas para este formulario
+  const validatePhone = useCallback((phone) => {
     const cleanPhone = phone.replace(/\D/g, '');
     if (!phone) return 'El teléfono es requerido';
     
-    // Mexican phone validation: 10 digits or +52 followed by 10 digits
     if (phone.startsWith('+52')) {
       if (cleanPhone.length !== 12) return 'Teléfono debe tener 10 dígitos después de +52';
     } else if (cleanPhone.length !== 10) {
       return 'Teléfono debe tener 10 dígitos (ej: 5551234567)';
     }
     return '';
-  };
+  }, []);
 
-  const validateName = (name, fieldName) => {
+  const validateName = useCallback((name, fieldName) => {
     const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
     if (!name) return `${fieldName} es requerido`;
     if (!nameRegex.test(name)) return `${fieldName} solo debe contener letras y espacios`;
     if (name.length < 2) return `${fieldName} debe tener al menos 2 caracteres`;
     return '';
-  };
+  }, []);
 
-  const validateEmergencyContact = (phone) => {
-    if (!phone) return ''; // Emergency contact is optional
+  const validateEmergencyContact = useCallback((phone) => {
+    if (!phone) return '';
     const cleanPhone = phone.replace(/\D/g, '');
     if (phone.startsWith('+52')) {
       if (cleanPhone.length !== 12) return 'Teléfono debe tener 10 dígitos después de +52';
@@ -68,31 +64,38 @@ const AppointmentForm = ({ isOpen, onClose, selectedDate, selectedTime, onSucces
       return 'Teléfono debe tener 10 dígitos (ej: 5551234567)';
     }
     return '';
-  };
+  }, []);
 
-  const validateField = (field, value) => {
-    let error = '';
+  const validateFormField = useCallback((field, value) => {
+    const rules = [];
+    
     switch (field) {
       case 'firstName':
-        error = validateName(value, 'El nombre');
-        break;
+        return validateName(value, 'El nombre');
       case 'lastName':
-        error = validateName(value, 'Los apellidos');
-        break;
+        return validateName(value, 'Los apellidos');
       case 'email':
-        error = validateEmail(value);
+        rules.push({ type: 'required' }, { type: 'email' });
         break;
       case 'phone':
-        error = validatePhone(value);
-        break;
+        return validatePhone(value);
       case 'emergencyContact':
-        error = validateEmergencyContact(value);
+        return validateEmergencyContact(value);
+      case 'service':
+        rules.push({ type: 'required', message: 'Selecciona un servicio' });
+        break;
+      case 'password':
+        if (createAccount) {
+          rules.push({ type: 'required' }, { type: 'password' });
+        }
         break;
       default:
-        break;
+        return '';
     }
-    return error;
-  };
+
+    validateField(field, value, rules);
+    return errors[field]?.[0] || '';
+  }, [validateField, validateName, validatePhone, validateEmergencyContact, createAccount, errors]);
 
   const services = [
     {
@@ -145,7 +148,7 @@ const AppointmentForm = ({ isOpen, onClose, selectedDate, selectedTime, onSucces
     { number: 3, title: 'Confirmación', icon: <Check className="w-4 h-4" /> }
   ];
 
-  const handleInputChange = (field, value) => {
+  const handleInputChange = useCallback((field, value) => {
     // Format phone number as user types
     if (field === 'phone' || field === 'emergencyContact') {
       value = formatPhoneNumber(value);
@@ -163,12 +166,15 @@ const AppointmentForm = ({ isOpen, onClose, selectedDate, selectedTime, onSucces
     }));
 
     // Validate field in real-time
-    const error = validateField(field, value);
-    setErrors(prev => ({
-      ...prev,
-      [field]: error
-    }));
-  };
+    const error = validateFormField(field, value);
+    if (error) {
+      // Solo establecer error si hay uno
+      validateField(field, value, [{ type: 'custom', message: error }]);
+    } else {
+      // Limpiar error si la validación pasa
+      clearFieldError(field);
+    }
+  }, [validateFormField, validateField, clearFieldError]);
 
   const formatPhoneNumber = (value) => {
     // Remove all non-digit characters
@@ -260,8 +266,7 @@ const AppointmentForm = ({ isOpen, onClose, selectedDate, selectedTime, onSucces
     }
   };
 
-  const validateAllFields = () => {
-    const newErrors = {};
+  const validateAllFields = useCallback(() => {
     let isValid = true;
 
     // Validate service selection
@@ -273,38 +278,33 @@ const AppointmentForm = ({ isOpen, onClose, selectedDate, selectedTime, onSucces
 
     // Validate personal information
     const requiredFields = ['firstName', 'lastName', 'email', 'phone'];
+    
     requiredFields.forEach(field => {
-      const error = validateField(field, formData[field]);
+      const error = validateFormField(field, formData[field]);
       if (error) {
-        newErrors[field] = error;
+        // Marcar el campo como tocado y mostrar error
+        setTouched(prev => ({ ...prev, [field]: true }));
+        validateField(field, formData[field], [{ type: 'custom', message: error }]);
         isValid = false;
       }
     });
 
     // Validate emergency contact if provided
     if (formData.emergencyContact) {
-      const emergencyError = validateField('emergencyContact', formData.emergencyContact);
+      const emergencyError = validateFormField('emergencyContact', formData.emergencyContact);
       if (emergencyError) {
-        newErrors.emergencyContact = emergencyError;
+        setTouched(prev => ({ ...prev, emergencyContact: true }));
+        validateField('emergencyContact', formData.emergencyContact, [{ type: 'custom', message: emergencyError }]);
         isValid = false;
       }
     }
 
     if (!isValid) {
-      setErrors(prev => ({ ...prev, ...newErrors }));
-      setTouched(prev => ({
-        ...prev,
-        firstName: true,
-        lastName: true,
-        email: true,
-        phone: true,
-        emergencyContact: true
-      }));
       setCurrentStep(2); // Go back to personal info step
     }
 
     return isValid;
-  };
+  }, [formData, validateFormField, validateField]);
 
   const prevStep = () => {
     if (currentStep > 1) {
@@ -312,30 +312,32 @@ const AppointmentForm = ({ isOpen, onClose, selectedDate, selectedTime, onSucces
     }
   };
 
-  const handleSubmit = async () => {
-    // Validate all fields before submission
-    if (!validateAllFields()) {
-      alert('Por favor corrige los errores en el formulario antes de continuar');
-      return;
-    }
-
-    if (!selectedDate || !selectedTime) {
-      alert('Por favor selecciona fecha y hora para la cita');
-      return;
-    }
-
-    const currentUser = getCurrentUser();
+  const handleSubmit = useCallback(async () => {
+    setLoading(true);
     
-    const appointmentData = {
-      ...formData,
-      date: selectedDate,
-      time: selectedTime,
-      userId: currentUser ? currentUser.uid : null,
-      userEmail: currentUser ? currentUser.email : formData.email,
-      status: 'pending'
-    };
-
     try {
+      // Validate all fields before submission
+      if (!validateAllFields()) {
+        alert('Por favor corrige los errores en el formulario antes de continuar');
+        return;
+      }
+
+      if (!selectedDate || !selectedTime) {
+        alert('Por favor selecciona fecha y hora para la cita');
+        return;
+      }
+
+      const currentUser = getCurrentUser();
+      
+      const appointmentData = {
+        ...formData,
+        date: selectedDate,
+        time: selectedTime,
+        userId: currentUser ? currentUser.uid : null,
+        userEmail: currentUser ? currentUser.email : formData.email,
+        status: 'pending'
+      };
+
       // Guardar la cita en Firebase
       const result = await createAppointment(appointmentData);
       
@@ -360,7 +362,7 @@ const AppointmentForm = ({ isOpen, onClose, selectedDate, selectedTime, onSucces
           emergencyContact: '',
           medicalHistory: ''
         });
-        setErrors({});
+        clearErrors();
         setTouched({});
         setCurrentStep(1);
       } else {
@@ -370,8 +372,10 @@ const AppointmentForm = ({ isOpen, onClose, selectedDate, selectedTime, onSucces
     } catch (error) {
       console.error('Error:', error);
       alert('Error al agendar la cita. Por favor intenta de nuevo.');
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [validateAllFields, selectedDate, selectedTime, formData, onSuccess, onClose, clearErrors]);
 
   const renderStepContent = () => {
     switch (currentStep) {
@@ -596,6 +600,56 @@ const AppointmentForm = ({ isOpen, onClose, selectedDate, selectedTime, onSucces
                 />
               </div>
             </div>
+
+            {/* Opción de crear cuenta */}
+            <div className="border-t pt-6">
+              <div className="bg-gradient-to-r from-blue-50 to-emerald-50 p-4 rounded-lg">
+                <div className="flex items-start space-x-3">
+                  <input
+                    type="checkbox"
+                    id="createAccount"
+                    checked={createAccount}
+                    onChange={(e) => setCreateAccount(e.target.checked)}
+                    className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <div className="flex-1">
+                    <label htmlFor="createAccount" className="text-dental-darkgray font-semibold cursor-pointer">
+                      🎯 Crear cuenta para seguimiento de citas (Opcional)
+                    </label>
+                    <p className="text-sm text-dental-gray mt-1">
+                      Crea una cuenta para ver el historial de tus citas, recibir recordatorios y reagendar fácilmente.
+                    </p>
+                    <div className="mt-2 text-xs text-emerald-600">
+                      ✓ Historial de citas • ✓ Recordatorios automáticos • ✓ Reagendar en línea
+                    </div>
+                  </div>
+                </div>
+
+                {createAccount && (
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="md:col-span-2">
+                        <label className="block text-dental-darkgray font-semibold mb-2">
+                          Contraseña para tu cuenta *
+                        </label>
+                        <input
+                          type="password"
+                          value={formData.password}
+                          onChange={(e) => handleInputChange('password', e.target.value)}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-dental-blue focus:border-transparent"
+                          placeholder="Mínimo 6 caracteres"
+                          minLength="6"
+                          required={createAccount}
+                        />
+                        <div className="text-xs text-gray-500 mt-1">
+                          Usa una contraseña segura de al menos 6 caracteres
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         );
 
@@ -805,11 +859,17 @@ const AppointmentForm = ({ isOpen, onClose, selectedDate, selectedTime, onSucces
         ) : (
           <button
             onClick={handleSubmit}
-            disabled={!selectedDate || !selectedTime}
-            className="flex items-center space-x-2 btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={!selectedDate || !selectedTime || loading}
+            className="flex items-center justify-center space-x-2 btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Check className="w-4 h-4" />
-            <span>Confirmar Cita</span>
+            {loading ? (
+              <LoadingSpinner size="sm" text="Procesando..." />
+            ) : (
+              <>
+                <Check className="w-4 h-4" />
+                <span>Confirmar Cita</span>
+              </>
+            )}
           </button>
         )}
       </div>

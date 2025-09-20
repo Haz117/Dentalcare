@@ -16,12 +16,14 @@ import {
   parseISO 
 } from 'date-fns';
 import { es } from 'date-fns/locale';
+import LoadingSpinner from './LoadingSpinner';
 
 const Calendar = ({ selectedDate, onDateSelect, selectedTime, onTimeSelect }) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [availableSlots, setAvailableSlots] = useState({});
   const [showTimeModal, setShowTimeModal] = useState(false);
   const [selectedCalendarDate, setSelectedCalendarDate] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   // Horarios disponibles
   const timeSlots = [
@@ -32,7 +34,12 @@ const Calendar = ({ selectedDate, onDateSelect, selectedTime, onTimeSelect }) =>
 
   // Simulación de disponibilidad (esto vendría de tu backend)
   useEffect(() => {
-    const generateAvailability = () => {
+    const generateAvailability = async () => {
+      setLoading(true);
+      
+      // Simular delay de API
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
       const availability = {};
       const today = new Date();
       
@@ -68,6 +75,7 @@ const Calendar = ({ selectedDate, onDateSelect, selectedTime, onTimeSelect }) =>
       }
       
       setAvailableSlots(availability);
+      setLoading(false);
     };
 
     generateAvailability();
@@ -172,61 +180,69 @@ const Calendar = ({ selectedDate, onDateSelect, selectedTime, onTimeSelect }) =>
         </p>
       </div>
 
-      {/* Navegación del calendario */}
-      <div className="flex items-center justify-between mb-8">
-        <button
-          onClick={prevMonth}
-          className="p-3 hover:bg-dental-lightblue rounded-xl transition-all duration-200 hover:scale-105"
-        >
-          <ChevronLeft className="w-6 h-6 text-dental-darkgray" />
-        </button>
-        
-        <h2 className="text-2xl font-bold text-dental-darkgray capitalize">
-          {format(currentMonth, 'MMMM yyyy', { locale: es })}
-        </h2>
-        
-        <button
-          onClick={nextMonth}
-          className="p-3 hover:bg-dental-lightblue rounded-xl transition-all duration-200 hover:scale-105"
-        >
-          <ChevronRight className="w-6 h-6 text-dental-darkgray" />
-        </button>
-      </div>
-
-      {/* Días de la semana */}
-      <div className="grid grid-cols-7 mb-4">
-        {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map((day) => (
-          <div key={day} className="h-12 flex items-center justify-center text-dental-darkgray font-bold text-lg bg-dental-lightblue">
-            {day}
-          </div>
-        ))}
-      </div>
-
-      {/* Días del calendario */}
-      {renderCalendarDays()}
-
-      {/* Leyenda mejorada */}
-      <div className="mt-8 bg-gray-50 p-6 rounded-xl">
-        <h4 className="font-semibold text-dental-darkgray mb-4 text-lg">Leyenda</h4>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-          <div className="flex items-center gap-3">
-            <div className="w-4 h-4 bg-green-500 rounded-full shadow-sm"></div>
-            <span className="text-dental-darkgray font-medium">Disponible</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="w-4 h-4 bg-yellow-500 rounded-full shadow-sm"></div>
-            <span className="text-dental-darkgray font-medium">Pocas citas</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="w-4 h-4 bg-red-500 rounded-full shadow-sm"></div>
-            <span className="text-dental-darkgray font-medium">No disponible</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="w-4 h-4 bg-dental-blue rounded-full shadow-sm"></div>
-            <span className="text-dental-darkgray font-medium">Seleccionado</span>
-          </div>
+      {loading ? (
+        <div className="min-h-[400px] flex items-center justify-center">
+          <LoadingSpinner size="lg" text="Cargando disponibilidad..." />
         </div>
-      </div>
+      ) : (
+        <>
+          {/* Navegación del calendario */}
+          <div className="flex items-center justify-between mb-8">
+            <button
+              onClick={prevMonth}
+              className="p-3 hover:bg-dental-lightblue rounded-xl transition-all duration-200 hover:scale-105"
+            >
+              <ChevronLeft className="w-6 h-6 text-dental-darkgray" />
+            </button>
+            
+            <h2 className="text-2xl font-bold text-dental-darkgray capitalize">
+              {format(currentMonth, 'MMMM yyyy', { locale: es })}
+            </h2>
+            
+            <button
+              onClick={nextMonth}
+              className="p-3 hover:bg-dental-lightblue rounded-xl transition-all duration-200 hover:scale-105"
+            >
+              <ChevronRight className="w-6 h-6 text-dental-darkgray" />
+            </button>
+          </div>
+
+          {/* Días de la semana */}
+          <div className="grid grid-cols-7 mb-4">
+            {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map((day) => (
+              <div key={day} className="h-12 flex items-center justify-center text-dental-darkgray font-bold text-lg bg-dental-lightblue">
+                {day}
+              </div>
+            ))}
+          </div>
+
+          {/* Días del calendario */}
+          {renderCalendarDays()}
+
+          {/* Leyenda mejorada */}
+          <div className="mt-8 bg-gray-50 p-6 rounded-xl">
+            <h4 className="font-semibold text-dental-darkgray mb-4 text-lg">Leyenda</h4>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+              <div className="flex items-center gap-3">
+                <div className="w-4 h-4 bg-green-500 rounded-full shadow-sm"></div>
+                <span className="text-dental-darkgray font-medium">Disponible</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-4 h-4 bg-yellow-500 rounded-full shadow-sm"></div>
+                <span className="text-dental-darkgray font-medium">Pocas citas</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-4 h-4 bg-red-500 rounded-full shadow-sm"></div>
+                <span className="text-dental-darkgray font-medium">No disponible</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-4 h-4 bg-dental-blue rounded-full shadow-sm"></div>
+                <span className="text-dental-darkgray font-medium">Seleccionado</span>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Modal de selección de hora */}
       {showTimeModal && selectedCalendarDate && (

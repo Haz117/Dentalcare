@@ -1,8 +1,11 @@
 import { useAuth } from '../contexts/AuthContext';
+import { useLocation } from 'react-router-dom';
 import AuthComponent from './AuthComponent';
+import AdminLogin from './AdminLogin';
 
 const ProtectedRoute = ({ children, requireAdmin = false }) => {
-  const { isAuthenticated, isAdmin, isLoading } = useAuth();
+  const { isAuthenticated, isAdmin, isLoading, login } = useAuth();
+  const location = useLocation();
 
   // Mostrar loading mientras se verifica la autenticación
   if (isLoading) {
@@ -15,6 +18,18 @@ const ProtectedRoute = ({ children, requireAdmin = false }) => {
 
   // Si no está autenticado, mostrar componente de autenticación
   if (!isAuthenticated()) {
+    // Si está accediendo a /admin, mostrar AdminLogin directamente
+    if (location.pathname === '/admin') {
+      return (
+        <AdminLogin 
+          onLogin={(adminData) => {
+            login(adminData);
+          }}
+        />
+      );
+    }
+    
+    // Para otras rutas protegidas, mostrar AuthComponent normal
     return (
       <div className="min-h-screen bg-gray-50 py-12">
         <div className="max-w-md mx-auto">

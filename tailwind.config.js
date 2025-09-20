@@ -25,11 +25,42 @@ export default {
           white: '#ffffff',
           gray: '#6b7280',
           darkgray: '#374151'
+        },
+        gradient: {
+          from: '#667eea',
+          to: '#764ba2'
         }
       },
       fontFamily: {
         sans: ['Inter', 'ui-sans-serif', 'system-ui'],
       },
+      animation: {
+        'float': 'float 6s ease-in-out infinite',
+        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'fade-in': 'fadeIn 0.5s ease-in-out',
+        'slide-up': 'slideUp 0.5s ease-out',
+      },
+      keyframes: {
+        float: {
+          '0%, 100%': { transform: 'translateY(0px)' },
+          '50%': { transform: 'translateY(-10px)' },
+        },
+        fadeIn: {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        slideUp: {
+          '0%': { transform: 'translateY(100%)', opacity: '0' },
+          '100%': { transform: 'translateY(0)', opacity: '1' },
+        },
+      },
+      backdropBlur: {
+        xs: '2px',
+      },
+      boxShadow: {
+        'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
+        'dental': '0 20px 50px rgba(30, 64, 175, 0.15)',
+      }
     },
   },
   plugins: [],

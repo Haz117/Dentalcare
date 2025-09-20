@@ -7,23 +7,70 @@
 @layer base {
   html {
     font-family: 'Inter', system-ui, sans-serif;
+    scroll-behavior: smooth;
+  }
+  
+  * {
+    @apply transition-colors duration-200;
   }
 }
 
 @layer components {
   .btn-primary {
-    @apply bg-dental-blue hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200;
+    @apply bg-dental-blue hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5 focus:outline-none focus:ring-4 focus:ring-blue-300;
   }
   
   .btn-secondary {
-    @apply bg-white hover:bg-gray-50 text-dental-blue border-2 border-dental-blue font-semibold py-3 px-6 rounded-lg transition-colors duration-200;
+    @apply bg-white hover:bg-gray-50 text-dental-blue border-2 border-dental-blue font-semibold py-3 px-6 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg hover:-translate-y-0.5 focus:outline-none focus:ring-4 focus:ring-blue-300;
   }
   
   .card {
-    @apply bg-white rounded-xl shadow-lg p-6 transition-transform duration-200 hover:scale-105;
+    @apply bg-white rounded-xl shadow-lg p-6 transition-all duration-300 hover:scale-105 hover:shadow-2xl border border-gray-100;
   }
   
   .section-padding {
     @apply px-4 sm:px-6 lg:px-8 py-16;
   }
+
+  .gradient-bg {
+    @apply bg-gradient-to-br from-blue-50 via-white to-blue-50;
+  }
+
+  .glass-effect {
+    @apply bg-white/80 backdrop-blur-md border border-white/20 shadow-xl;
+  }
+
+  .floating-animation {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  .pulse-slow {
+    animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+/* Scrollbar personalizado */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-100;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-dental-blue rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-blue-700;
 }

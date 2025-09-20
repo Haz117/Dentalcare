@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { loginUser, registerUser, logoutUser } from '../services/authService';
 import { useAuth } from '../contexts/AuthContext';
+import AdminLogin from './AdminLogin';
+import LoadingSpinner from './LoadingSpinner';
 
 const AuthComponent = () => {
   const { user, login, logout } = useAuth();
@@ -129,6 +131,18 @@ const AuthComponent = () => {
     );
   }
 
+  // Si se está mostrando el login de admin, usar el componente AdminLogin
+  if (showAdminLogin) {
+    return (
+      <AdminLogin 
+        onLogin={(adminData) => {
+          login(adminData);
+          setShowAdminLogin(false);
+        }}
+      />
+    );
+  }
+
   return (
     <div className="max-w-md mx-auto mt-8 p-6 bg-white rounded-lg shadow-md">
       <h2 className="text-2xl font-bold mb-4">
@@ -246,13 +260,15 @@ const AuthComponent = () => {
         <button
           type="submit"
           disabled={loading}
-          className={`w-full py-2 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+          className={`w-full py-2 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center ${
             showAdminLogin
               ? 'bg-red-600 text-white hover:bg-red-700'
               : 'bg-blue-600 text-white hover:bg-blue-700'
           }`}
         >
-          {loading ? 'Verificando...' : (
+          {loading ? (
+            <LoadingSpinner size="sm" text="Verificando..." />
+          ) : (
             showAdminLogin ? '🔓 Acceder como Admin' : 
             (isLoginMode ? 'Iniciar Sesión' : 'Registrarse')
           )}
