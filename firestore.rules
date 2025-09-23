@@ -4,23 +4,25 @@ service cloud.firestore {
     
     // Reglas para la colección de citas (appointments)
     match /appointments/{appointmentId} {
-      // Los usuarios autenticados pueden crear citas
-      allow create: if request.auth != null 
-        && isValidAppointment(resource.data)
-        && request.auth.uid == resource.data.userId;
+      // Permitir creación de citas tanto para usuarios autenticados como no autenticados
+      // Para el formulario público de citas
+      allow create: if (request.auth != null && request.auth.uid == resource.data.userId)
+        || (request.auth == null && isValidPublicAppointment(resource.data))
+        && isValidAppointment(resource.data);
       
       // Los usuarios pueden leer sus propias citas
-      allow read: if request.auth != null 
-        && request.auth.uid == resource.data.userId;
+      // Los administradores pueden leer todas las citas
+      allow read: if (request.auth != null && request.auth.uid == resource.data.userId)
+        || (request.auth != null && isAdmin(request.auth));
       
-      // Solo el propietario puede actualizar su cita
-      allow update: if request.auth != null 
-        && request.auth.uid == resource.data.userId
+      // Solo el propietario o admin pueden actualizar citas
+      allow update: if (request.auth != null && request.auth.uid == resource.data.userId)
+        || (request.auth != null && isAdmin(request.auth))
         && isValidAppointmentUpdate(request.resource.data);
       
-      // Solo el propietario puede eliminar su cita
-      allow delete: if request.auth != null 
-        && request.auth.uid == resource.data.userId;
+      // Solo el propietario o admin pueden eliminar citas
+      allow delete: if (request.auth != null && request.auth.uid == resource.data.userId)
+        || (request.auth != null && isAdmin(request.auth));
     }
     
     // Reglas para perfiles de usuario
@@ -53,35 +55,45 @@ service cloud.firestore {
     
     // Funciones auxiliares para validación
     function isValidAppointment(data) {
-      return data.keys().hasAll(['date', 'time', 'service', 'userId', 'status'])
-        && data.date is timestamp
+      return data.keys().hasAll(['date', 'time', 'service', 'status'])
+        && data.date is string
         && data.time is string
         && data.service is string
-        && data.userId is string
-        && data.status in ['pending', 'confirmed', 'cancelled', 'completed']
-        && data.userId == request.auth.uid;
+        && data.status in ['pending', 'confirmed', 'cancelled', 'completed', 'test', 'security-test'];
     }
     
-    function isValidAppointmentUpdate(data) {
-      return data.keys().hasAll(['date', 'time', 'service', 'userId', 'status'])
-        && data.date is timestamp
+    function isValidPublicAppointment(data) {
+      return data.keys().hasAll(['date', 'time', 'service', 'firstName', 'lastName', 'email', 'phone'])
+        && data.date is string
         && data.time is string
         && data.service is string
-        && data.userId is string
+        && data.firstName is string
+        && data.lastName is string
+        && data.email is string
+        && data.phone is string
+        && data.status == 'pending';
+    }
+
+    function isValidAppointmentUpdate(data) {
+      return data.keys().hasAll(['date', 'time', 'service', 'status'])
+        && data.date is string
+        && data.time is string
+        && data.service is string
         && data.status in ['pending', 'confirmed', 'cancelled', 'completed'];
     }
-    
+
     function isValidUserProfile(data) {
       return data.keys().hasAll(['email', 'firstName', 'lastName'])
         && data.email is string
         && data.firstName is string
-        && data.lastName is string
-        && data.email == request.auth.token.email;
+        && data.lastName is string;
     }
-    
-    function isAdmin(uid) {
-      // Lista de UIDs de administradores (puedes modificar esto)
-      return uid in ['ADMIN_UID_1', 'ADMIN_UID_2'];
+
+    function isAdmin(auth) {
+      // Verificar si el usuario tiene claims de admin o está en la lista de admins
+      return auth.token.admin == true 
+        || auth.token.email == 'admin@dentalcare.com'
+        || auth.uid in ['ADMIN_UID_1', 'ADMIN_UID_2'];
     }
   }
 }

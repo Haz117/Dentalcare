@@ -10,6 +10,7 @@ import AdminPanel from './pages/AdminPanel'
 import PatientDashboard from './pages/PatientDashboard'
 import ProtectedRoute from './components/ProtectedRoute'
 import ErrorBoundary from './components/ErrorBoundary'
+import FirebaseTestPanel from './components/FirebaseTestPanel'
 import { AuthProvider } from './contexts/AuthContext'
 import './index.css'
 
@@ -39,6 +40,7 @@ function App() {
                 <AdminPanel />
               </ProtectedRoute>
             } />
+            <Route path="/firebase-test" element={<FirebaseTestPanel />} />
           </Routes>
           <Footer />
         </div>

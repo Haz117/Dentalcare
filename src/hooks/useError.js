@@ -122,6 +122,11 @@ export const useFormValidation = () => {
             fieldErrors.push(rule.message || `Máximo ${rule.value} caracteres`);
           }
           break;
+        case 'custom':
+          if (rule.message) {
+            fieldErrors.push(rule.message);
+          }
+          break;
       }
     });
 

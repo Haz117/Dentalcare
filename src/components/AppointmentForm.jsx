@@ -67,35 +67,32 @@ const AppointmentForm = ({ isOpen, onClose, selectedDate, selectedTime, onSucces
   }, []);
 
   const validateFormField = useCallback((field, value) => {
-    const rules = [];
-    
     switch (field) {
       case 'firstName':
         return validateName(value, 'El nombre');
       case 'lastName':
         return validateName(value, 'Los apellidos');
       case 'email':
-        rules.push({ type: 'required' }, { type: 'email' });
-        break;
+        if (!value) return 'El email es requerido';
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(value)) return 'Email inválido';
+        return '';
       case 'phone':
         return validatePhone(value);
       case 'emergencyContact':
         return validateEmergencyContact(value);
       case 'service':
-        rules.push({ type: 'required', message: 'Selecciona un servicio' });
-        break;
+        return !value ? 'Selecciona un servicio' : '';
       case 'password':
         if (createAccount) {
-          rules.push({ type: 'required' }, { type: 'password' });
+          if (!value) return 'La contraseña es requerida';
+          if (value.length < 6) return 'La contraseña debe tener al menos 6 caracteres';
         }
-        break;
+        return '';
       default:
         return '';
     }
-
-    validateField(field, value, rules);
-    return errors[field]?.[0] || '';
-  }, [validateField, validateName, validatePhone, validateEmergencyContact, createAccount, errors]);
+  }, [validateName, validatePhone, validateEmergencyContact, createAccount]);
 
   const services = [
     {
@@ -165,16 +162,9 @@ const AppointmentForm = ({ isOpen, onClose, selectedDate, selectedTime, onSucces
       [field]: true
     }));
 
-    // Validate field in real-time
-    const error = validateFormField(field, value);
-    if (error) {
-      // Solo establecer error si hay uno
-      validateField(field, value, [{ type: 'custom', message: error }]);
-    } else {
-      // Limpiar error si la validación pasa
-      clearFieldError(field);
-    }
-  }, [validateFormField, validateField, clearFieldError]);
+    // Clear any existing error for this field when user starts typing
+    clearFieldError(field);
+  }, [clearFieldError]);
 
   const formatPhoneNumber = (value) => {
     // Remove all non-digit characters
@@ -201,11 +191,13 @@ const AppointmentForm = ({ isOpen, onClose, selectedDate, selectedTime, onSucces
       [field]: true
     }));
     
-    const error = validateField(field, formData[field]);
-    setErrors(prev => ({
-      ...prev,
-      [field]: error
-    }));
+    // Validate field on blur
+    const error = validateFormField(field, formData[field]);
+    if (error) {
+      // Set error using the hook's validateField method with proper rules
+      const rules = [{ type: 'custom', message: error }];
+      validateField(field, formData[field], rules);
+    }
   };
 
   const handleServiceSelect = (service) => {
@@ -218,7 +210,6 @@ const AppointmentForm = ({ isOpen, onClose, selectedDate, selectedTime, onSucces
     if (currentStep < 3) {
       // Validate current step before proceeding
       let isValid = true;
-      const newErrors = {};
 
       if (currentStep === 1) {
         if (!formData.service) {
@@ -232,32 +223,25 @@ const AppointmentForm = ({ isOpen, onClose, selectedDate, selectedTime, onSucces
         const fieldsToValidate = ['firstName', 'lastName', 'email', 'phone'];
         
         fieldsToValidate.forEach(field => {
-          const error = validateField(field, formData[field]);
+          const error = validateFormField(field, formData[field]);
           if (error) {
-            newErrors[field] = error;
+            // Use the validation hook properly
+            validateField(field, formData[field], [{ type: 'custom', message: error }]);
             isValid = false;
           }
         });
 
         // Also validate emergency contact if provided
         if (formData.emergencyContact) {
-          const emergencyError = validateField('emergencyContact', formData.emergencyContact);
+          const emergencyError = validateFormField('emergencyContact', formData.emergencyContact);
           if (emergencyError) {
-            newErrors.emergencyContact = emergencyError;
+            validateField('emergencyContact', formData.emergencyContact, [{ type: 'custom', message: emergencyError }]);
             isValid = false;
           }
         }
 
         if (!isValid) {
-          setErrors(prev => ({ ...prev, ...newErrors }));
-          setTouched(prev => ({
-            ...prev,
-            firstName: true,
-            lastName: true,
-            email: true,
-            phone: true,
-            emergencyContact: true
-          }));
+          alert('Por favor corrige los errores antes de continuar');
           return;
         }
       }
