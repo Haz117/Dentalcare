@@ -1,0 +1,10 @@
+<!-- Badge para notificaciones -->
+<svg width="72" height="72" viewBox="0 0 72 72" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="36" cy="36" r="36" fill="#1e40af"/>
+  <!-- Diente simplificado -->
+  <path d="M 26 20 Q 26 16 30 16 L 42 16 Q 46 16 46 20 L 46 44 Q 46 52 36 52 Q 26 52 26 44 Z" 
+        fill="white"/>
+  <!-- Cruz pequeña -->
+  <rect x="34" y="24" width="4" height="16" fill="#1e40af"/>
+  <rect x="28" y="30" width="16" height="4" fill="#1e40af"/>
+</svg>

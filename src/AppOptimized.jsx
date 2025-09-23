@@ -4,12 +4,7 @@ import Header from './components/Header';
 import Footer from './components/Footer';
 import ErrorBoundary from './components/ErrorBoundary';
 import PWAPrompt from './components/PWAPrompt';
-import EmergencyButton from './components/EmergencyButton';
-import Breadcrumbs from './components/Breadcrumbs';
 import LoadingSpinner from './components/LoadingSpinner';
-import { BackToTopButton } from './components/BackToTopButton';
-import { useSEO } from './hooks/useSEO';
-import { useAnalyticsTracking } from './services/analyticsService';
 import { AuthProvider } from './contexts/AuthContext';
 import './index.css';
 
@@ -43,18 +38,13 @@ const PageSuspense = ({ children, fallback }) => (
   </Suspense>
 );
 
+// Componente principal optimizado
 function App() {
-  // Hooks para SEO y Analytics
-  useSEO(); // SEO dinámico por página
-  const { trackEvent } = useAnalyticsTracking(); // Analytics tracking
-
   return (
     <ErrorBoundary>
       <AuthProvider>
         <div className="App">
           <Header />
-          <Breadcrumbs />
-          
           <Routes>
             {/* Página principal con componentes lazy */}
             <Route 
@@ -145,15 +135,12 @@ function App() {
               } 
             />
           </Routes>
-          
           <Footer />
           <PWAPrompt />
-          <EmergencyButton />
-          <BackToTopButton />
         </div>
       </AuthProvider>
     </ErrorBoundary>
   );
 }
 
-export default App
+export default App;

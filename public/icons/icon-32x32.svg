@@ -1,0 +1,9 @@
+<!-- Favicon 32x32 -->
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <rect width="32" height="32" fill="#1e40af" rx="6"/>
+  <circle cx="16" cy="16" r="12" fill="white" opacity="0.1"/>
+  <path d="M 11 6 Q 11 4 13 4 L 19 4 Q 21 4 21 6 L 21 20 Q 21 24 16 24 Q 11 24 11 20 Z" fill="white"/>
+  <ellipse cx="14" cy="10" rx="1.5" ry="4" fill="rgba(255,255,255,0.3)"/>
+  <rect x="15" y="10" width="2" height="8" fill="#1e40af"/>
+  <rect x="11" y="13" width="10" height="2" fill="#1e40af"/>
+</svg>

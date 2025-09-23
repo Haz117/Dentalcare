@@ -1,0 +1,28 @@
+<!-- Icon Placeholder para DentalCare -->
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Fondo azul dental -->
+  <rect width="512" height="512" fill="#1e40af" rx="80"/>
+  
+  <!-- Círculo de fondo blanco -->
+  <circle cx="256" cy="256" r="180" fill="white" opacity="0.15"/>
+  
+  <!-- Diente principal -->
+  <g transform="translate(256, 256)">
+    <!-- Forma del diente -->
+    <path d="M -40 -80 Q -40 -100 -20 -100 L 20 -100 Q 40 -100 40 -80 L 40 40 Q 40 80 0 80 Q -40 80 -40 40 Z" 
+          fill="white" stroke="none"/>
+    
+    <!-- Brillo del diente -->
+    <ellipse cx="-15" cy="-40" rx="8" ry="20" fill="rgba(255,255,255,0.3)"/>
+    
+    <!-- Cruz médica pequeña -->
+    <g transform="translate(0, -20)">
+      <rect x="-2" y="-12" width="4" height="24" fill="#1e40af"/>
+      <rect x="-12" y="-2" width="24" height="4" fill="#1e40af"/>
+    </g>
+  </g>
+  
+  <!-- Texto DentalCare -->
+  <text x="256" y="420" font-family="Arial, sans-serif" font-size="36" font-weight="bold" 
+        text-anchor="middle" fill="white">DentalCare</text>
+</svg>

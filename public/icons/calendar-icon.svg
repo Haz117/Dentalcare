@@ -1,0 +1,16 @@
+<!-- Icono especial para calendario -->
+<svg width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+  <rect width="48" height="48" fill="#10b981" rx="8"/>
+  <!-- Calendario -->
+  <rect x="8" y="12" width="32" height="28" fill="white" rx="4"/>
+  <rect x="8" y="12" width="32" height="8" fill="#059669" rx="4 4 0 0"/>
+  <!-- Líneas del calendario -->
+  <line x1="14" y1="24" x2="34" y2="24" stroke="#e5e7eb" stroke-width="1"/>
+  <line x1="14" y1="28" x2="34" y2="28" stroke="#e5e7eb" stroke-width="1"/>
+  <line x1="14" y1="32" x2="34" y2="32" stroke="#e5e7eb" stroke-width="1"/>
+  <!-- Fecha destacada -->
+  <circle cx="24" cy="30" r="3" fill="#10b981"/>
+  <!-- Argollas -->
+  <rect x="16" y="8" width="2" height="8" fill="#6b7280" rx="1"/>
+  <rect x="30" y="8" width="2" height="8" fill="#6b7280" rx="1"/>
+</svg>

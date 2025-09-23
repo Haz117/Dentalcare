@@ -49,16 +49,53 @@
   }
 }
 
-@keyframes float {
-  0%, 100% {
-    transform: translateY(0px);
+@layer utilities {
+  .animate-shimmer {
+    animation: shimmer 2s infinite;
   }
-  50% {
-    transform: translateY(-10px);
+  
+  .filter-grayscale {
+    filter: grayscale(100%);
+  }
+
+  .will-change-transform {
+    will-change: transform;
+  }
+
+  .will-change-opacity {
+    will-change: opacity;
+  }
+
+  .backface-hidden {
+    backface-visibility: hidden;
+  }
+
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+
+  .transform-gpu {
+    transform: translateZ(0);
   }
 }
 
-/* Scrollbar personalizado */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes float {
+  0%, 100% { 
+    transform: translateY(0px);
+  }
+  50% { 
+    transform: translateY(-10px);
+  }
+}/* Scrollbar personalizado */
 ::-webkit-scrollbar {
   width: 8px;
 }

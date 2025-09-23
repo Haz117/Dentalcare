@@ -1,0 +1,6 @@
+<!-- Favicon 16x16 -->
+<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+  <rect width="16" height="16" fill="#1e40af" rx="3"/>
+  <path d="M 6 3 Q 6 2 7 2 L 9 2 Q 10 2 10 3 L 10 10 Q 10 12 8 12 Q 6 12 6 10 Z" fill="white"/>
+  <rect x="7" y="5" width="2" height="4" fill="#1e40af"/>
+</svg>
