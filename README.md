@@ -1,10 +1,10 @@
-# 🦷 DentalCare - Consultorio Dental
+#  DentalCare - Consultorio Dental
 
 Una página web moderna y completa para consultorios dentales, desarrollada con React, Vite y Tailwind CSS. Incluye sistema de citas, información de servicios, y está preparada para integración con pasarelas de pago.
 
-## ✨ Características
+##  Características
 
-### 🎯 Funcionalidades Actuales
+###  Funcionalidades Actuales
 - **Página Principal Completa**: Hero section, servicios, información del equipo
 - **Sistema de Citas Avanzado**: Formulario paso a paso para agendar citas
 - **Diseño Responsivo**: Optimizado para desktop, tablet y móvil
@@ -12,13 +12,13 @@ Una página web moderna y completa para consultorios dentales, desarrollada con 
 - **Formulario de Contacto**: Con validación y múltiples opciones de comunicación
 - **Secciones Informativas**: Sobre nosotros, equipo médico, valores
 
-### 🚀 Preparado para el Futuro
+###  Preparado para el Futuro
 - **Estructura para Pagos**: Base preparada para Stripe, PayPal, MercadoPago
 - **API Service**: Configuración lista para backend
 - **Escalabilidad**: Arquitectura modular y extensible
 - **SEO Optimizado**: Meta tags y estructura semántica
 
-## 🛠️ Tecnologías
+##  Tecnologías
 
 - **Frontend**: React 18 + Vite
 - **Styling**: Tailwind CSS
@@ -27,7 +27,7 @@ Una página web moderna y completa para consultorios dentales, desarrollada con 
 - **Routing**: React Router DOM (ready to implement)
 - **Payment**: Stripe/PayPal integration ready
 
-## 📦 Instalación
+##  Instalación
 
 1. **Clonar el repositorio**
    ```bash
@@ -53,7 +53,7 @@ Una página web moderna y completa para consultorios dentales, desarrollada con 
 
 La aplicación estará disponible en `http://localhost:3000`
 
-## 🏗️ Estructura del Proyecto
+##  Estructura del Proyecto
 
 ```
 consultorio-dental/
@@ -78,7 +78,7 @@ consultorio-dental/
 └── README.md               # Este archivo
 ```
 
-## 🎨 Personalización
+##  Personalización
 
 ### Colores del Tema
 El proyecto usa un sistema de colores personalizable definido en `tailwind.config.js`:
@@ -102,7 +102,7 @@ colors: {
 - **About**: Información del equipo médico, valores, misión
 - **Contact**: Formularios, información de contacto, horarios
 
-## 💳 Integración de Pagos
+##  Integración de Pagos
 
 El proyecto está preparado para integrar múltiples pasarelas de pago:
 
@@ -120,14 +120,14 @@ REACT_APP_PAYMENT_API_KEY=pk_test_...
 - Transferencias SPEI
 - Pago en consultorio
 
-## 📱 Funcionalidades Móviles
+##  Funcionalidades Móviles
 
 - Menú hamburguesa responsivo
 - Botón de llamada de emergencia flotante
 - Formularios optimizados para móvil
 - Navegación touch-friendly
 
-## 🔧 Scripts Disponibles
+##  Scripts Disponibles
 
 ```bash
 npm run dev          # Servidor de desarrollo
@@ -136,7 +136,7 @@ npm run preview      # Preview del build
 npm run lint         # Linter de código
 ```
 
-## 🚀 Despliegue
+##  Despliegue
 
 ### Netlify/Vercel
 ```bash
@@ -150,7 +150,7 @@ npm run build
 # Servir archivos de dist/ con cualquier servidor web
 ```
 
-## 🔮 Próximas Funcionalidades
+##  Próximas Funcionalidades
 
 ### Corto Plazo
 - [ ] Sistema de autenticación de pacientes
@@ -172,7 +172,7 @@ npm run build
 - [ ] Marketplace de servicios dentales
 - [ ] Sistema de seguros médicos
 
-## 🤝 Contribución
+##  Contribución
 
 1. Fork el proyecto
 2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
@@ -180,16 +180,16 @@ npm run build
 4. Push a la rama (`git push origin feature/AmazingFeature`)
 5. Abre un Pull Request
 
-## 📧 Contacto
+##  Contacto
 
 Para consultas sobre el proyecto:
 - Email: hazelalmaraz91@gmail.com
 - Teléfono: 7731135626
 
-## 📄 Licencia
+##  Licencia
 
 Este proyecto está bajo la Licencia MIT. Ver `LICENSE` para más detalles.
 
 ---
 
-**¡Tu sonrisa es nuestra prioridad! 🦷✨**
+**¡Tu sonrisa es nuestra prioridad! **
