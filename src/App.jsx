@@ -13,34 +13,82 @@ import { useAnalyticsTracking } from './services/analyticsService';
 import { AuthProvider } from './contexts/AuthContext';
 import './index.css';
 
-// Lazy loading de componentes principales
-const Hero = lazy(() => import('./components/Hero'));
-const Services = lazy(() => import('./components/Services'));
-const About = lazy(() => import('./components/About'));
-const Contact = lazy(() => import('./components/Contact'));
+// Lazy loading de componentes principales con manejo de errores
+const Hero = lazy(() => 
+  import('./components/Hero').catch(err => {
+    console.error('Error loading Hero:', err);
+    return { default: () => <div className="p-8 text-center text-red-600">Error al cargar el hero</div> };
+  })
+);
 
-// Lazy loading de páginas
-const AppointmentBooking = lazy(() => import('./pages/AppointmentBooking'));
-const AdminPanel = lazy(() => import('./pages/AdminPanel'));
-const PatientDashboard = lazy(() => import('./pages/PatientDashboard'));
-const FirebaseTestPanel = lazy(() => import('./components/FirebaseTestPanel'));
+const Services = lazy(() => 
+  import('./components/Services').catch(err => {
+    console.error('Error loading Services:', err);
+    return { default: () => <div className="p-8 text-center text-red-600">Error al cargar los servicios</div> };
+  })
+);
 
-// Lazy loading de componentes protegidos
-const ProtectedRoute = lazy(() => import('./components/ProtectedRoute'));
+const About = lazy(() => 
+  import('./components/About').catch(err => {
+    console.error('Error loading About:', err);
+    return { default: () => <div className="p-8 text-center text-red-600">Error al cargar la información</div> };
+  })
+);
 
-// Componente de suspense personalizado
+const Contact = lazy(() => 
+  import('./components/Contact').catch(err => {
+    console.error('Error loading Contact:', err);
+    return { default: () => <div className="p-8 text-center text-red-600">Error al cargar el contacto</div> };
+  })
+);
+
+// Lazy loading de páginas con manejo de errores
+const AppointmentBooking = lazy(() => 
+  import('./pages/AppointmentBooking').catch(err => {
+    console.error('Error loading AppointmentBooking:', err);
+    return { default: () => <div className="p-8 text-center text-red-600">Error al cargar la página de citas</div> };
+  })
+);
+
+const AdminPanel = lazy(() => 
+  import('./pages/AdminPanel').catch(err => {
+    console.error('Error loading AdminPanel:', err);
+    return { default: () => <div className="p-8 text-center text-red-600">Error al cargar el panel de administración</div> };
+  })
+);
+
+const PatientDashboard = lazy(() => 
+  import('./pages/PatientDashboard').catch(err => {
+    console.error('Error loading PatientDashboard:', err);
+    return { default: () => <div className="p-8 text-center text-red-600">Error al cargar el dashboard del paciente</div> };
+  })
+);
+
+const FirebaseTestPanel = lazy(() => 
+  import('./components/FirebaseTestPanel').catch(err => {
+    console.error('Error loading FirebaseTestPanel:', err);
+    return { default: () => <div className="p-8 text-center text-red-600">Error al cargar el panel de pruebas</div> };
+  })
+);
+
+// Importación directa de componentes que usan contexto
+import ProtectedRoute from './components/ProtectedRoute';
+
+// Componente de suspense personalizado con manejo de errores
 const PageSuspense = ({ children, fallback }) => (
-  <Suspense 
-    fallback={
-      fallback || (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
-          <LoadingSpinner size="lg" text="Cargando..." />
-        </div>
-      )
-    }
-  >
-    {children}
-  </Suspense>
+  <ErrorBoundary fallback={<div className="p-8 text-center text-red-600">Error al cargar el componente</div>}>
+    <Suspense 
+      fallback={
+        fallback || (
+          <div className="min-h-screen flex items-center justify-center bg-gray-50">
+            <LoadingSpinner size="lg" text="Cargando..." />
+          </div>
+        )
+      }
+    >
+      {children}
+    </Suspense>
+  </ErrorBoundary>
 );
 
 function App() {

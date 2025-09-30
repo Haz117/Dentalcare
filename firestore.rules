@@ -6,14 +6,15 @@ service cloud.firestore {
     match /appointments/{appointmentId} {
       // Permitir creación de citas tanto para usuarios autenticados como no autenticados
       // Para el formulario público de citas
-      allow create: if (request.auth != null && request.auth.uid == resource.data.userId)
-        || (request.auth == null && isValidPublicAppointment(resource.data))
+      allow create: if ((request.auth != null && request.auth.uid == resource.data.userId)
+        || (request.auth == null && isValidPublicAppointment(resource.data)))
         && isValidAppointment(resource.data);
       
       // Los usuarios pueden leer sus propias citas
       // Los administradores pueden leer todas las citas
       allow read: if (request.auth != null && request.auth.uid == resource.data.userId)
-        || (request.auth != null && isAdmin(request.auth));
+        || (request.auth != null && isAdmin(request.auth))
+        || isAdmin(request.auth);
       
       // Solo el propietario o admin pueden actualizar citas
       allow update: if (request.auth != null && request.auth.uid == resource.data.userId)
@@ -23,6 +24,9 @@ service cloud.firestore {
       // Solo el propietario o admin pueden eliminar citas
       allow delete: if (request.auth != null && request.auth.uid == resource.data.userId)
         || (request.auth != null && isAdmin(request.auth));
+        
+      // Permitir listar todas las citas para administradores
+      allow list: if request.auth != null && isAdmin(request.auth);
     }
     
     // Reglas para perfiles de usuario
@@ -90,10 +94,12 @@ service cloud.firestore {
     }
 
     function isAdmin(auth) {
-      // Verificar si el usuario tiene claims de admin o está en la lista de admins
-      return auth.token.admin == true 
-        || auth.token.email == 'admin@dentalcare.com'
-        || auth.uid in ['ADMIN_UID_1', 'ADMIN_UID_2'];
-    }
+      // Verificar si el usuario tiene claims de admin
+      // Para desarrollo, también permitir ciertos emails
+      return (auth != null) && 
+        (auth.token.admin == true 
+        || (auth.token.email != null && 
+            (auth.token.email == 'admin@dentalcare.com' 
+            || auth.token.email.matches('.*@admin.dentalcare.com'))));
   }
 }

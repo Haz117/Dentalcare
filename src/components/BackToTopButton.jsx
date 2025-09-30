@@ -11,7 +11,7 @@ export const BackToTopButton = () => {
   return (
     <button
       onClick={scrollToTop}
-      className="fixed bottom-20 left-4 w-12 h-12 bg-dental-blue text-white rounded-full shadow-lg hover:bg-blue-700 transition-all duration-300 hover:scale-110 z-40 flex items-center justify-center"
+      className="fixed bottom-24 left-6 w-12 h-12 bg-dental-blue text-white rounded-full shadow-lg hover:bg-blue-700 transition-all duration-300 hover:scale-110 z-40 flex items-center justify-center"
       aria-label="Volver arriba"
       title="Volver arriba"
     >

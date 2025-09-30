@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { Menu, X, Phone, Mail, MapPin, User, Settings, LogOut } from 'lucide-react';
+import { Menu, X, Phone, Mail, MapPin, User, Settings, LogOut, Shield } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const Header = () => {
@@ -99,10 +99,12 @@ const Header = () => {
                   {isAdmin() ? (
                     <Link 
                       to="/admin" 
-                      className="text-red-600 hover:text-red-700 px-3 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                      className="text-red-600 hover:text-red-700 px-3 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 flex items-center space-x-2"
                       aria-label="Acceder al panel de administrador"
+                      title="Panel de Administrador"
                     >
-                      Panel Admin
+                      <Shield className="w-4 h-4" aria-hidden="true" />
+                      <span className="hidden lg:block">Admin</span>
                     </Link>
                   ) : (
                     <Link 
@@ -153,7 +155,7 @@ const Header = () => {
                         {!isAdmin() && (
                           <Link 
                             to="/paciente" 
-                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
+                            className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                             onClick={() => setIsUserMenuOpen(false)}
                           >
                             <User className="w-4 h-4" />
@@ -162,7 +164,7 @@ const Header = () => {
                         )}
                         <button
                           onClick={handleLogout}
-                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
+                          className="flex items-center space-x-2 w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         >
                           <LogOut className="w-4 h-4" />
                           <span>Cerrar Sesión</span>
@@ -174,8 +176,14 @@ const Header = () => {
               ) : (
                 // Navegación para usuarios no autenticados
                 <div className="flex items-center space-x-4">
-                  <Link to="/admin" className="text-red-600 hover:text-red-700 px-3 py-2 text-sm font-medium transition-colors">
-                    Acceso Admin
+                  <Link 
+                    to="/admin" 
+                    className="text-red-600 hover:text-red-700 px-3 py-2 text-sm font-medium transition-colors flex items-center space-x-2"
+                    title="Acceso para Administradores"
+                    aria-label="Acceso para administradores"
+                  >
+                    <Shield className="w-4 h-4" aria-hidden="true" />
+                    <span className="hidden lg:block">Admin</span>
                   </Link>
                   <Link to="/agendar" className="btn-primary">
                     Agendar Cita
@@ -242,20 +250,22 @@ const Header = () => {
               {isAdmin() ? (
                 <Link 
                   to="/admin" 
-                  className="text-dental-darkgray hover:text-dental-blue block px-3 py-2 text-base font-medium focus:outline-none focus:ring-2 focus:ring-dental-blue focus:ring-offset-2"
+                  className="text-dental-darkgray hover:text-dental-blue px-3 py-2 text-base font-medium focus:outline-none focus:ring-2 focus:ring-dental-blue focus:ring-offset-2 flex items-center space-x-2"
                   onClick={closeMenus}
                   aria-label="Acceder al panel de administrador"
                 >
-                  Panel Admin
+                  <Shield className="w-5 h-5" aria-hidden="true" />
+                  <span>Panel Admin</span>
                 </Link>
               ) : (
                 <Link 
                   to="/admin" 
-                  className="text-red-600 hover:text-red-700 block px-3 py-2 text-base font-medium focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                  className="text-red-600 hover:text-red-700 px-3 py-2 text-base font-medium focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 flex items-center space-x-2"
                   onClick={closeMenus}
                   aria-label="Acceso para administradores"
                 >
-                  Acceso Admin
+                  <Shield className="w-5 h-5" aria-hidden="true" />
+                  <span>Acceso Admin</span>
                 </Link>
               )}
               <Link 

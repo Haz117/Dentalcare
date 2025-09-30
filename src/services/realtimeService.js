@@ -19,6 +19,36 @@ class RealtimeService {
   constructor() {
     this.listeners = new Map();
     this.activeSubscriptions = new Set();
+    this.retryAttempts = new Map(); // Para tracking de reintentos
+    this.maxRetries = 3;
+    this.baseRetryDelay = 1000; // 1 segundo base
+  }
+
+  // Función para manejar reconexión automática
+  retryConnection(subscriptionId, retryFn, callback) {
+    const attempts = this.retryAttempts.get(subscriptionId) || 0;
+    
+    if (attempts >= this.maxRetries) {
+      console.error(`❌ Máximo de intentos alcanzado para ${subscriptionId}`);
+      callback({ 
+        error: `No se pudo establecer conexión después de ${this.maxRetries} intentos`,
+        isConnectionError: true 
+      });
+      return;
+    }
+
+    const delay = this.baseRetryDelay * Math.pow(2, attempts); // Exponential backoff
+    console.log(`🔄 Reintentando conexión para ${subscriptionId} en ${delay}ms (intento ${attempts + 1}/${this.maxRetries})`);
+    
+    setTimeout(() => {
+      this.retryAttempts.set(subscriptionId, attempts + 1);
+      retryFn();
+    }, delay);
+  }
+
+  // Limpiar intentos de reconexión exitosos
+  clearRetryAttempts(subscriptionId) {
+    this.retryAttempts.delete(subscriptionId);
   }
 
   // Escuchar cambios en tiempo real de citas
@@ -28,83 +58,124 @@ class RealtimeService {
     // Si ya existe una suscripción, cancelarla primero
     this.unsubscribe(subscriptionId);
 
-    try {
-      let appointmentsQuery;
-      
-      if (isAdmin) {
-        // Admin ve todas las citas
-        appointmentsQuery = query(
-          collection(db, 'appointments'),
-          orderBy('date', 'asc'),
-          orderBy('time', 'asc')
-        );
-      } else {
-        // Paciente ve solo sus citas
-        appointmentsQuery = query(
-          collection(db, 'appointments'),
-          where('userId', '==', userId),
-          orderBy('date', 'asc')
-        );
-      }
+    const createSubscription = () => {
+      try {
+        let appointmentsQuery;
+        
+        if (isAdmin) {
+          // Admin ve todas las citas
+          appointmentsQuery = query(
+            collection(db, 'appointments'),
+            orderBy('date', 'asc'),
+            orderBy('time', 'asc')
+          );
+        } else {
+          // Paciente ve solo sus citas
+          appointmentsQuery = query(
+            collection(db, 'appointments'),
+            where('userId', '==', userId),
+            orderBy('date', 'asc')
+          );
+        }
 
-      const unsubscribe = onSnapshot(
-        appointmentsQuery,
-        (snapshot) => {
-          const appointments = [];
-          const changes = [];
+        const unsubscribe = onSnapshot(
+          appointmentsQuery,
+          (snapshot) => {
+            // Conexión exitosa - limpiar intentos de reconexión
+            this.clearRetryAttempts(subscriptionId);
+            
+            const appointments = [];
+            const changes = [];
 
-          snapshot.docChanges().forEach((change) => {
-            const appointmentData = {
-              id: change.doc.id,
-              ...change.doc.data(),
-              // Convertir timestamps a fechas
-              createdAt: change.doc.data().createdAt?.toDate(),
-              updatedAt: change.doc.data().updatedAt?.toDate()
-            };
+            snapshot.docChanges().forEach((change) => {
+              const appointmentData = {
+                id: change.doc.id,
+                ...change.doc.data(),
+                // Convertir timestamps a fechas
+                createdAt: change.doc.data().createdAt?.toDate(),
+                updatedAt: change.doc.data().updatedAt?.toDate()
+              };
 
-            changes.push({
-              type: change.type, // 'added', 'modified', 'removed'
-              data: appointmentData,
-              oldIndex: change.oldIndex,
-              newIndex: change.newIndex
+              changes.push({
+                type: change.type, // 'added', 'modified', 'removed'
+                data: appointmentData,
+                oldIndex: change.oldIndex,
+                newIndex: change.newIndex
+              });
+
+              if (change.type !== 'removed') {
+                appointments.push(appointmentData);
+              }
             });
 
-            if (change.type !== 'removed') {
-              appointments.push(appointmentData);
+            // Ordenar citas por fecha y hora
+            appointments.sort((a, b) => {
+              const dateA = new Date(a.date + 'T' + a.time);
+              const dateB = new Date(b.date + 'T' + b.time);
+              return dateA - dateB;
+            });
+
+            console.log(`📋 Actualizaciones de citas recibidas (${changes.length} cambios):`, changes);
+
+            callback({
+              appointments,
+              changes,
+              timestamp: new Date(),
+              isConnected: true
+            });
+          },
+          (error) => {
+            console.error('❌ Error en suscripción de citas:', error);
+            
+            // Determinar si es un error de permisos o conexión
+            const isPermissionError = error.code === 'permission-denied';
+            const isNetworkError = error.code === 'unavailable' || error.code === 'internal';
+            
+            if (isPermissionError) {
+              console.error('🚫 Error de permisos en Firestore');
+              callback({ 
+                error: 'No tienes permisos para acceder a las citas. Verifica tu autenticación.',
+                isPermissionError: true 
+              });
+            } else if (isNetworkError) {
+              console.warn('🌐 Error de red, intentando reconectar...');
+              callback({ 
+                error: 'Error de conexión. Reintentando...',
+                isNetworkError: true,
+                isConnected: false 
+              });
+              // Intentar reconectar
+              this.retryConnection(subscriptionId, createSubscription, callback);
+            } else {
+              console.error('❌ Error desconocido:', error);
+              callback({ 
+                error: error.message,
+                errorCode: error.code 
+              });
             }
-          });
+          }
+        );
 
-          // Ordenar citas por fecha y hora
-          appointments.sort((a, b) => {
-            const dateA = new Date(a.date + 'T' + a.time);
-            const dateB = new Date(b.date + 'T' + b.time);
-            return dateA - dateB;
-          });
+        this.listeners.set(subscriptionId, unsubscribe);
+        this.activeSubscriptions.add(subscriptionId);
+        
+        console.log(`✅ Suscripción a citas activada: ${subscriptionId}`);
+        return subscriptionId;
 
-          console.log(`📋 Actualizaciones de citas recibidas (${changes.length} cambios):`, changes);
-
-          callback({
-            appointments,
-            changes,
-            timestamp: new Date()
-          });
-        },
-        (error) => {
-          console.error('❌ Error en suscripción de citas:', error);
-          callback({ error: error.message });
+      } catch (error) {
+        console.error('❌ Error al crear suscripción de citas:', error);
+        
+        // Reintentar la suscripción si es un error recuperable
+        if (error.code === 'unavailable' || error.code === 'internal') {
+          this.retryConnection(subscriptionId, createSubscription, callback);
+        } else {
+          throw error;
         }
-      );
+      }
+    };
 
-      this.listeners.set(subscriptionId, unsubscribe);
-      this.activeSubscriptions.add(subscriptionId);
-      
-      console.log(`✅ Suscripción a citas activada: ${subscriptionId}`);
-      return subscriptionId;
-
-    } catch (error) {
-      console.error('❌ Error al crear suscripción de citas:', error);
-      throw error;
-    }
+    // Iniciar la suscripción
+    return createSubscription();
   }
 
   // Escuchar cambios en estado de disponibilidad
@@ -404,6 +475,7 @@ class RealtimeService {
 
 // Exportar instancia singleton
 export const realtimeService = new RealtimeService();
+export default realtimeService;
 
 // Hook para usar el servicio en tiempo real
 export const useRealtime = () => {

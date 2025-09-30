@@ -152,7 +152,7 @@ const PWAPrompt = () => {
       {/* Botón de compartir flotante */}
       <button
         onClick={handleShare}
-        className="fixed bottom-20 right-4 w-12 h-12 bg-dental-blue text-white rounded-full shadow-lg hover:bg-blue-700 transition-all duration-200 hover:scale-110 z-40 flex items-center justify-center"
+        className="fixed top-1/2 left-4 w-12 h-12 bg-dental-blue text-white rounded-full shadow-lg hover:bg-blue-700 transition-all duration-200 hover:scale-110 z-40 flex items-center justify-center transform -translate-y-1/2"
         aria-label="Compartir"
         title="Compartir DentalCare"
       >
