@@ -25,19 +25,71 @@
   }
 
   .btn-action {
-    @apply p-2.5 rounded-lg transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center;
+    @apply p-2 rounded-lg transition-all duration-200 min-w-[40px] min-h-[40px] flex items-center justify-center border border-transparent hover:border-gray-200;
+    flex-shrink: 0;
+    flex-grow: 0;
+    box-sizing: border-box;
   }
 
   .btn-action-view {
-    @apply btn-action text-dental-blue hover:bg-dental-lightblue;
+    @apply btn-action text-dental-blue hover:bg-dental-lightblue hover:border-dental-blue/20 hover:scale-105;
   }
 
   .btn-action-confirm {
-    @apply btn-action text-green-600 hover:bg-green-50;
+    @apply btn-action text-green-600 hover:bg-green-50 hover:border-green-200 hover:scale-105;
   }
 
   .btn-action-cancel {
-    @apply btn-action text-red-600 hover:bg-red-50;
+    @apply btn-action text-red-600 hover:bg-red-50 hover:border-red-200 hover:scale-105;
+  }
+
+  /* Contenedores de botones para evitar superposición */
+  .actions-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: nowrap;
+    min-width: 150px;
+    overflow: visible;
+  }
+
+  .actions-container > button {
+    flex-shrink: 0;
+    flex-grow: 0;
+  }
+
+  /* Emergency Button group para botones en columna */
+  .emergency-button-group {
+    position: fixed !important;
+    bottom: 1.5rem !important;
+    right: 1.5rem !important;
+    z-index: 60 !important;
+    pointer-events: auto !important;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .emergency-button-group button,
+  .emergency-button-group a {
+    pointer-events: auto !important;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  }
+
+  /* Tooltip hover effects */
+  .emergency-btn-tooltip {
+    position: absolute;
+    right: 100%;
+    margin-right: 0.5rem;
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
   }
   
   .card {

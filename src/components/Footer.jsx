@@ -211,13 +211,6 @@ const Footer = () => {
           </div>
         </div>
       </div>
-
-      {/* Emergency Floating Button */}
-      <div className="fixed bottom-6 right-6 z-50">
-        <button className="bg-red-600 hover:bg-red-700 text-white p-4 rounded-full shadow-lg transition-all duration-200 hover:scale-110">
-          <Phone className="w-6 h-6" />
-        </button>
-      </div>
     </footer>
   );
 };

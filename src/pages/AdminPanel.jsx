@@ -433,7 +433,7 @@ const AdminPanel = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Estado
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{minWidth: '160px', width: '160px'}}>
                       Acciones
                     </th>
                   </tr>
@@ -482,12 +482,13 @@ const AdminPanel = () => {
                           </span>
                         </td>
                         
-                        <td className="px-6 py-4">
-                          <div className="flex items-center space-x-3">
+                        <td className="px-6 py-4" style={{minWidth: '160px', width: '160px'}}>
+                          <div className="actions-container flex items-center justify-start gap-2 flex-nowrap" style={{minWidth: '150px'}}>
                             <button
                               onClick={() => showAppointmentDetails(appointment)}
-                              className="btn-action-view"
+                              className="btn-action-view flex-none"
                               title="Ver detalles"
+                              style={{minWidth: '40px', width: '40px', height: '40px'}}
                             >
                               <Eye className="w-4 h-4" />
                             </button>
@@ -495,8 +496,9 @@ const AdminPanel = () => {
                             {appointment.status === 'pending' && (
                               <button
                                 onClick={() => handleStatusChange(appointment.id, 'confirmed')}
-                                className="btn-action-confirm"
+                                className="btn-action-confirm flex-none"
                                 title="Confirmar cita"
+                                style={{minWidth: '40px', width: '40px', height: '40px'}}
                               >
                                 <CheckCircle className="w-4 h-4" />
                               </button>
@@ -505,8 +507,9 @@ const AdminPanel = () => {
                             {(appointment.status === 'pending' || appointment.status === 'confirmed') && (
                               <button
                                 onClick={() => handleStatusChange(appointment.id, 'cancelled')}
-                                className="btn-action-cancel"
+                                className="btn-action-cancel flex-none"
                                 title="Cancelar cita"
+                                style={{minWidth: '40px', width: '40px', height: '40px'}}
                               >
                                 <XCircle className="w-4 h-4" />
                               </button>
@@ -560,11 +563,12 @@ const AdminPanel = () => {
                         </span>
                       </div>
                       
-                      <div className="flex items-center space-x-2">
+                      <div className="actions-container flex items-center justify-end gap-2 flex-nowrap" style={{minWidth: '150px'}}>
                         <button
                           onClick={() => showAppointmentDetails(appointment)}
-                          className="btn-action-view"
+                          className="btn-action-view flex-none"
                           title="Ver detalles"
+                          style={{minWidth: '36px', width: '36px', height: '36px'}}
                         >
                           <Eye className="w-4 h-4" />
                         </button>
@@ -572,8 +576,9 @@ const AdminPanel = () => {
                         {appointment.status === 'pending' && (
                           <button
                             onClick={() => handleStatusChange(appointment.id, 'confirmed')}
-                            className="btn-action-confirm"
+                            className="btn-action-confirm flex-none"
                             title="Confirmar cita"
+                            style={{minWidth: '36px', width: '36px', height: '36px'}}
                           >
                             <CheckCircle className="w-4 h-4" />
                           </button>
@@ -582,8 +587,9 @@ const AdminPanel = () => {
                         {(appointment.status === 'pending' || appointment.status === 'confirmed') && (
                           <button
                             onClick={() => handleStatusChange(appointment.id, 'cancelled')}
-                            className="btn-action-cancel"
+                            className="btn-action-cancel flex-none"
                             title="Cancelar cita"
+                            style={{minWidth: '36px', width: '36px', height: '36px'}}
                           >
                             <XCircle className="w-4 h-4" />
                           </button>
