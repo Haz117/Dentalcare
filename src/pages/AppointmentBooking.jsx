@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Calendar as CalendarIcon, Clock, User, CheckCircle, Info } from 'lucide-react';
 import Calendar from '../components/Calendar';
 import AppointmentForm from '../components/AppointmentForm';
@@ -8,6 +8,7 @@ const AppointmentBooking = () => {
   const [selectedTime, setSelectedTime] = useState('');
   const [showAppointmentForm, setShowAppointmentForm] = useState(false);
   const [appointments, setAppointments] = useState([]);
+  const calendarRef = useRef(null);
 
   const handleDateSelect = (date) => {
     setSelectedDate(date);
@@ -21,6 +22,12 @@ const AppointmentBooking = () => {
 
   const handleAppointmentSuccess = (appointmentData) => {
     setAppointments(prev => [...prev, appointmentData]);
+    
+    // Refrescar el calendario para mostrar el horario como ocupado
+    if (calendarRef.current && calendarRef.current.refreshAvailability) {
+      calendarRef.current.refreshAvailability(appointmentData.date);
+    }
+    
     // Reset selections
     setSelectedDate('');
     setSelectedTime('');
@@ -47,6 +54,7 @@ const AppointmentBooking = () => {
           {/* Calendario Principal */}
           <div className="lg:col-span-3">
             <Calendar
+              ref={calendarRef}
               selectedDate={selectedDate}
               onDateSelect={handleDateSelect}
               selectedTime={selectedTime}

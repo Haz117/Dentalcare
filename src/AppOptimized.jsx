@@ -3,7 +3,6 @@ import { Routes, Route } from 'react-router-dom';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import ErrorBoundary from './components/ErrorBoundary';
-import PWAPrompt from './components/PWAPrompt';
 import LoadingSpinner from './components/LoadingSpinner';
 import { AuthProvider } from './contexts/AuthContext';
 import './index.css';
@@ -136,7 +135,6 @@ function App() {
             />
           </Routes>
           <Footer />
-          <PWAPrompt />
         </div>
       </AuthProvider>
     </ErrorBoundary>

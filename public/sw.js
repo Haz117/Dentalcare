@@ -1,7 +1,7 @@
 // Service Worker para DentalCare PWA
-const CACHE_NAME = 'dentalcare-v1.0.0';
-const STATIC_CACHE = 'dentalcare-static-v1';
-const DYNAMIC_CACHE = 'dentalcare-dynamic-v1';
+const CACHE_NAME = 'dentalcare-v1.0.1';
+const STATIC_CACHE = 'dentalcare-static-v2';
+const DYNAMIC_CACHE = 'dentalcare-dynamic-v2';
 
 // Archivos críticos para cachear
 const STATIC_ASSETS = [
@@ -12,8 +12,10 @@ const STATIC_ASSETS = [
   '/src/App.jsx',
   '/src/index.css',
   // Iconos y assets críticos
-  '/icons/icon-192x192.png',
-  '/icons/icon-512x512.png',
+  '/icons/icon-192x192.svg',
+  '/icons/icon-512x512.svg',
+  '/icons/icon-32x32.svg',
+  '/icons/icon-16x16.svg',
   // Fuentes
   'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap'
 ];
@@ -191,14 +193,14 @@ self.addEventListener('push', (event) => {
   const data = event.data.json();
   const options = {
     body: data.body,
-    icon: '/icons/icon-192x192.png',
-    badge: '/icons/badge-72x72.png',
+    icon: '/icons/icon-192x192.svg',
+    badge: '/icons/badge-72x72.svg',
     data: data.data || {},
     actions: [
       {
         action: 'view',
         title: 'Ver Cita',
-        icon: '/icons/calendar-icon.png'
+        icon: '/icons/calendar-icon.svg'
       },
       {
         action: 'dismiss',

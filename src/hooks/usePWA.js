@@ -65,27 +65,27 @@ export const usePWA = () => {
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
-    // Registrar Service Worker
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js')
-        .then((registration) => {
-          console.log('✅ Service Worker registrado:', registration.scope);
-          
-          // Verificar actualizaciones
-          registration.addEventListener('updatefound', () => {
-            const newWorker = registration.installing;
-            newWorker.addEventListener('statechange', () => {
-              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                console.log('🔄 Nueva versión disponible');
-                setSwUpdateAvailable(true);
-              }
-            });
-          });
-        })
-        .catch((error) => {
-          console.error('❌ Error al registrar Service Worker:', error);
-        });
-    }
+    // Registrar Service Worker - DESHABILITADO temporalmente
+    // if ('serviceWorker' in navigator) {
+    //   navigator.serviceWorker.register('/sw.js')
+    //     .then((registration) => {
+    //       console.log('✅ Service Worker registrado:', registration.scope);
+    //       
+    //       // Verificar actualizaciones
+    //       registration.addEventListener('updatefound', () => {
+    //         const newWorker = registration.installing;
+    //         newWorker.addEventListener('statechange', () => {
+    //           if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+    //             console.log('🔄 Nueva versión disponible');
+    //             setSwUpdateAvailable(true);
+    //           }
+    //         });
+    //       });
+    //     })
+    //     .catch((error) => {
+    //       console.error('❌ Error al registrar Service Worker:', error);
+    //     });
+    // }
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);

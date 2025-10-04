@@ -26,6 +26,28 @@ const Header = () => {
     setIsUserMenuOpen(false);
   }, []);
 
+  // Handler específico para navegación a inicio
+  const handleHomeNavigation = useCallback((event, source = 'unknown') => {
+    closeMenus();
+    
+    // Forzar navegación a la página principal
+    if (window.location.pathname !== '/') {
+      // Usar navigate si está disponible o fallback manual
+      try {
+        window.history.pushState(null, '', '/');
+        window.dispatchEvent(new PopStateEvent('popstate'));
+        // Scroll to top para mostrar la página principal completa
+        window.scrollTo(0, 0);
+      } catch (error) {
+        // Fallback: recargar página principal
+        window.location.href = '/';
+      }
+    } else {
+      // Si ya estamos en la página principal, hacer scroll al top
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [closeMenus]);
+
   return (
     <header className="bg-white shadow-lg sticky top-0 z-50">
       {/* Top Bar con información de contacto */}
@@ -55,7 +77,12 @@ const Header = () => {
         <div className="flex justify-between items-center py-4">
           {/* Logo */}
           <div className="flex-shrink-0">
-            <Link to="/" className="text-2xl font-bold text-dental-blue">
+            <Link 
+              to="/" 
+              className="text-2xl font-bold text-dental-blue hover:text-blue-600 transition-colors"
+              onClick={(e) => handleHomeNavigation(e, 'logo')}
+              aria-label="DentalCare - Ir al inicio"
+            >
               DentalCare
             </Link>
           </div>
@@ -66,6 +93,7 @@ const Header = () => {
               <Link 
                 to="/" 
                 className="text-dental-darkgray hover:text-dental-blue px-3 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-dental-blue focus:ring-offset-2"
+                onClick={(e) => handleHomeNavigation(e, 'desktop-nav')}
                 aria-label="Ir a la página de inicio"
               >
                 Inicio
@@ -218,7 +246,7 @@ const Header = () => {
               <Link 
                 to="/" 
                 className="text-dental-darkgray hover:text-dental-blue block px-3 py-2 text-base font-medium focus:outline-none focus:ring-2 focus:ring-dental-blue focus:ring-offset-2"
-                onClick={closeMenus}
+                onClick={(e) => handleHomeNavigation(e, 'mobile-nav')}
                 aria-label="Ir a la página de inicio"
               >
                 Inicio

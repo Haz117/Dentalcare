@@ -3,7 +3,6 @@ import { Routes, Route } from 'react-router-dom';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import ErrorBoundary from './components/ErrorBoundary';
-import PWAPrompt from './components/PWAPrompt';
 import EmergencyButton from './components/EmergencyButton';
 import Breadcrumbs from './components/Breadcrumbs';
 import { BackToTopButton } from './components/BackToTopButton';
@@ -74,7 +73,6 @@ function App() {
           <EmergencyButton />
           <BackToTopButton />
           <Footer />
-          <PWAPrompt />
         </div>
       </AuthProvider>
     </ErrorBoundary>

@@ -1,5 +1,6 @@
 import { MapPin, Phone, Mail, Clock, Users, Award, Shield } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import AccountAccessGuide from './AccountAccessGuide';
 
 const Contact = () => {
   const contactInfo = [
@@ -163,6 +164,11 @@ const Contact = () => {
               Llamar Urgencias
             </a>
           </div>
+        </div>
+
+        {/* Account Access Guide */}
+        <div className="mb-20">
+          <AccountAccessGuide />
         </div>
 
         {/* Map Section */}

@@ -5,7 +5,7 @@ import LoadingSpinner from './LoadingSpinner';
 import EmailValidator from './EmailValidator';
 import { useFormValidation } from '../hooks/useError';
 import { createAppointment } from '../services/firebaseService';
-import { getCurrentUser, checkEmailExists } from '../services/authService';
+import { getCurrentUser, checkEmailExists, registerUser } from '../services/authService';
 
 const AppointmentForm = ({ isOpen, onClose, selectedDate, selectedTime, onSuccess }) => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -332,23 +332,63 @@ const AppointmentForm = ({ isOpen, onClose, selectedDate, selectedTime, onSucces
         return;
       }
 
-      const currentUser = getCurrentUser();
+      let userId = null;
+      let userEmail = formData.email;
+      
+      // Si el usuario marca crear cuenta, intentar crearla primero
+      if (createAccount && formData.password) {
+        console.log('📝 Creando cuenta de usuario...');
+        const registerResult = await registerUser(formData.email, formData.password, `${formData.firstName} ${formData.lastName}`);
+        
+        if (registerResult.success) {
+          console.log('✅ Cuenta creada exitosamente:', registerResult.user.uid);
+          userId = registerResult.user.uid;
+          userEmail = registerResult.user.email;
+          
+          // Mostrar mensaje de éxito para la creación de cuenta
+          alert(`🎉 ¡Cuenta creada exitosamente!\n\n📧 Se envió un email de verificación a: ${formData.email}\n\n✅ Ahora procedemos a agendar tu cita.`);
+        } else {
+          console.warn('⚠️ Error al crear cuenta:', registerResult.error);
+          // Si falla la creación de cuenta, preguntar si quiere continuar sin cuenta
+          const continueWithoutAccount = confirm(`No se pudo crear la cuenta: ${registerResult.error}\n\n¿Quieres continuar agendando la cita sin crear cuenta?`);
+          if (!continueWithoutAccount) {
+            return;
+          }
+          // Desmarcar crear cuenta para continuar
+          setCreateAccount(false);
+        }
+      } else {
+        // Verificar si hay un usuario autenticado
+        const currentUser = getCurrentUser();
+        if (currentUser) {
+          userId = currentUser.uid;
+          userEmail = currentUser.email;
+        }
+      }
       
       const appointmentData = {
         ...formData,
         date: selectedDate,
         time: selectedTime,
-        userId: currentUser ? currentUser.uid : null,
-        userEmail: currentUser ? currentUser.email : formData.email,
+        userId: userId,
+        userEmail: userEmail,
         status: 'pending'
       };
 
       // Guardar la cita en Firebase
+      console.log('📊 Guardando cita en Firebase...');
       const result = await createAppointment(appointmentData);
       
       if (result.success) {
-        console.log('Appointment saved to Firebase:', result.id);
-        alert('¡Cita agendada exitosamente! Te enviaremos un email de confirmación.');
+        console.log('✅ Cita guardada exitosamente:', result.id);
+        
+        let successMessage = '¡Cita agendada exitosamente! Te enviaremos un email de confirmación.';
+        
+        if (createAccount && userId) {
+          successMessage = `🎉 ¡Cuenta creada y cita agendada exitosamente!\n\n📦 Para acceder a tu cuenta:\n• Ve a la sección "Iniciar Sesión"\n• Usa tu email: ${formData.email}\n• Y la contraseña que acabas de crear\n\n📧 Revisa tu email para verificar tu cuenta.`;
+        }
+        
+        alert(successMessage);
         onSuccess && onSuccess({ ...appointmentData, id: result.id });
         onClose();
         
@@ -362,6 +402,7 @@ const AppointmentForm = ({ isOpen, onClose, selectedDate, selectedTime, onSucces
           email: '',
           phone: '',
           birthDate: '',
+          password: '',
           paymentMethod: 'pay-later',
           notes: '',
           emergencyContact: '',
@@ -372,7 +413,15 @@ const AppointmentForm = ({ isOpen, onClose, selectedDate, selectedTime, onSucces
         setCurrentStep(1);
       } else {
         console.error('Error saving appointment:', result.error);
-        alert('Error al agendar la cita. Por favor intenta de nuevo.');
+        
+        // Manejar específicamente el error de horario ocupado
+        if (result.errorCode === 'TIME_SLOT_OCCUPIED') {
+          alert(`⚠️ Horario No Disponible\n\n${result.error}\n\n💡 Sugerencia: Selecciona otro horario disponible en el calendario.`);
+          // Cerrar el modal para que el usuario pueda seleccionar otro horario
+          onClose();
+        } else {
+          alert(`❌ Error al agendar la cita: ${result.error}\n\nPor favor intenta de nuevo.`);
+        }
       }
     } catch (error) {
       console.error('Error:', error);
@@ -608,7 +657,7 @@ const AppointmentForm = ({ isOpen, onClose, selectedDate, selectedTime, onSucces
 
             {/* Opción de crear cuenta */}
             <div className="border-t pt-6">
-              <div className="bg-gradient-to-r from-blue-50 to-emerald-50 p-4 rounded-lg">
+              <div className="bg-gradient-to-r from-blue-50 to-emerald-50 p-4 rounded-lg border border-blue-200">
                 <div className="flex items-start space-x-3">
                   <input
                     type="checkbox"
@@ -624,9 +673,27 @@ const AppointmentForm = ({ isOpen, onClose, selectedDate, selectedTime, onSucces
                     <p className="text-sm text-dental-gray mt-1">
                       Crea una cuenta para ver el historial de tus citas, recibir recordatorios y reagendar fácilmente.
                     </p>
-                    <div className="mt-2 text-xs text-emerald-600">
-                      ✓ Historial de citas • ✓ Recordatorios automáticos • ✓ Reagendar en línea
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+                        ✓ Historial de citas
+                      </span>
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        ✓ Recordatorios automáticos
+                      </span>
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                        ✓ Reagendar en línea
+                      </span>
                     </div>
+                    {createAccount && (
+                      <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <p className="text-sm text-blue-800 font-medium">📧 Instrucciones importantes:</p>
+                        <ul className="text-xs text-blue-700 mt-1 space-y-1">
+                          <li>• Se enviará un email de verificación a tu correo</li>
+                          <li>• Podrás acceder con email y contraseña en "Iniciar Sesión"</li>
+                          <li>• La verificación de email es opcional pero recomendada</li>
+                        </ul>
+                      </div>
+                    )}
                   </div>
                 </div>
 

@@ -49,6 +49,14 @@ const Breadcrumbs = ({ className = '' }) => {
                 <Link
                   to={breadcrumb.path}
                   className="flex items-center text-gray-500 hover:text-dental-blue transition-colors"
+                  onClick={(e) => {
+                    // Asegurar navegación correcta
+                    if (breadcrumb.path === '/' && window.location.pathname !== '/') {
+                      e.preventDefault();
+                      window.history.pushState(null, '', '/');
+                      window.dispatchEvent(new PopStateEvent('popstate'));
+                    }
+                  }}
                   aria-label="Ir al inicio"
                 >
                   <Home className="w-4 h-4 mr-1" />
