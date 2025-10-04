@@ -24,7 +24,19 @@ export const AuthProvider = ({ children }) => {
     // Escuchar cambios en el estado de autenticación
     const unsubscribe = observeAuthState((user) => {
       console.log('🔐 AuthProvider: cambio de estado de autenticación:', user ? 'autenticado' : 'no autenticado');
-      setUser(user);
+      if (user) {
+        // Crear objeto de usuario con toda la información necesaria
+        const userData = {
+          uid: user.uid,
+          email: user.email,
+          displayName: user.displayName || user.email,
+          emailVerified: user.emailVerified,
+          isAdmin: false // Por defecto no es admin
+        };
+        setUser(userData);
+      } else {
+        setUser(null);
+      }
       setIsLoading(false);
     });
 

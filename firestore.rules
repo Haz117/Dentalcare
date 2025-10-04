@@ -2,104 +2,30 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Reglas para la colección de citas (appointments)
+    // Reglas para la colección de citas (appointments) - Modo desarrollo
     match /appointments/{appointmentId} {
-      // Permitir creación de citas tanto para usuarios autenticados como no autenticados
-      // Para el formulario público de citas
-      allow create: if ((request.auth != null && request.auth.uid == resource.data.userId)
-        || (request.auth == null && isValidPublicAppointment(resource.data)))
-        && isValidAppointment(resource.data);
-      
-      // Los usuarios pueden leer sus propias citas
-      // Los administradores pueden leer todas las citas
-      allow read: if (request.auth != null && request.auth.uid == resource.data.userId)
-        || (request.auth != null && isAdmin(request.auth))
-        || isAdmin(request.auth);
-      
-      // Solo el propietario o admin pueden actualizar citas
-      allow update: if (request.auth != null && request.auth.uid == resource.data.userId)
-        || (request.auth != null && isAdmin(request.auth))
-        && isValidAppointmentUpdate(request.resource.data);
-      
-      // Solo el propietario o admin pueden eliminar citas
-      allow delete: if (request.auth != null && request.auth.uid == resource.data.userId)
-        || (request.auth != null && isAdmin(request.auth));
-        
-      // Permitir listar todas las citas para administradores
-      allow list: if request.auth != null && isAdmin(request.auth);
+      // Permitir todas las operaciones para desarrollo
+      allow read, write: if true;
     }
     
-    // Reglas para perfiles de usuario
+    // Reglas para perfiles de usuario - Modo desarrollo
     match /users/{userId} {
-      // Solo el usuario puede crear su propio perfil
-      allow create: if request.auth != null 
-        && request.auth.uid == userId
-        && isValidUserProfile(request.resource.data);
-      
-      // Los usuarios pueden leer su propio perfil
-      allow read: if request.auth != null 
-        && request.auth.uid == userId;
-      
-      // Solo el usuario puede actualizar su propio perfil
-      allow update: if request.auth != null 
-        && request.auth.uid == userId
-        && isValidUserProfile(request.resource.data);
-      
-      // Los usuarios pueden eliminar su propio perfil
-      allow delete: if request.auth != null 
-        && request.auth.uid == userId;
+      allow read, write: if true;
     }
     
-    // Reglas para configuración del consultorio (solo administradores)
+    // Reglas para notificaciones - Modo desarrollo
+    match /notifications/{notificationId} {
+      allow read, write: if true;
+    }
+    
+    // Reglas para disponibilidad - Modo desarrollo
+    match /availability/{availabilityId} {
+      allow read, write: if true;
+    }
+    
+    // Reglas para configuración del consultorio - Modo desarrollo
     match /clinic/{document} {
-      // Solo administradores pueden leer/escribir configuración
-      allow read, write: if request.auth != null 
-        && isAdmin(request.auth.uid);
+      allow read, write: if true;
     }
-    
-    // Funciones auxiliares para validación
-    function isValidAppointment(data) {
-      return data.keys().hasAll(['date', 'time', 'service', 'status'])
-        && data.date is string
-        && data.time is string
-        && data.service is string
-        && data.status in ['pending', 'confirmed', 'cancelled', 'completed', 'test', 'security-test'];
-    }
-    
-    function isValidPublicAppointment(data) {
-      return data.keys().hasAll(['date', 'time', 'service', 'firstName', 'lastName', 'email', 'phone'])
-        && data.date is string
-        && data.time is string
-        && data.service is string
-        && data.firstName is string
-        && data.lastName is string
-        && data.email is string
-        && data.phone is string
-        && data.status == 'pending';
-    }
-
-    function isValidAppointmentUpdate(data) {
-      return data.keys().hasAll(['date', 'time', 'service', 'status'])
-        && data.date is string
-        && data.time is string
-        && data.service is string
-        && data.status in ['pending', 'confirmed', 'cancelled', 'completed'];
-    }
-
-    function isValidUserProfile(data) {
-      return data.keys().hasAll(['email', 'firstName', 'lastName'])
-        && data.email is string
-        && data.firstName is string
-        && data.lastName is string;
-    }
-
-    function isAdmin(auth) {
-      // Verificar si el usuario tiene claims de admin
-      // Para desarrollo, también permitir ciertos emails
-      return (auth != null) && 
-        (auth.token.admin == true 
-        || (auth.token.email != null && 
-            (auth.token.email == 'admin@dentalcare.com' 
-            || auth.token.email.matches('.*@admin.dentalcare.com'))));
   }
 }

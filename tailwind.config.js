@@ -19,13 +19,11 @@ export default {
           800: '#166534',
           900: '#14532d',
         },
-        dental: {
-          blue: '#1e40af',
-          lightblue: '#dbeafe',
-          white: '#ffffff',
-          gray: '#6b7280',
-          darkgray: '#374151'
-        },
+        'dental-blue': '#1e40af',
+        'dental-lightblue': '#dbeafe', 
+        'dental-white': '#ffffff',
+        'dental-gray': '#6b7280',
+        'dental-darkgray': '#374151',
         gradient: {
           from: '#667eea',
           to: '#764ba2'

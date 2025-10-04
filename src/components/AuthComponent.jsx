@@ -3,6 +3,7 @@ import { loginUser, registerUser, logoutUser } from '../services/authService';
 import { useAuth } from '../contexts/AuthContext';
 import AdminLogin from './AdminLogin';
 import LoadingSpinner from './LoadingSpinner';
+import EmailValidator from './EmailValidator';
 
 const AuthComponent = () => {
   const { user, login, logout } = useAuth();
@@ -16,18 +17,50 @@ const AuthComponent = () => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [emailValidation, setEmailValidation] = useState({
+    isValid: true,
+    message: ''
+  });
 
   // Ya no necesitamos useEffect aquí porque el contexto maneja el estado de autenticación
 
   const handleInputChange = (e) => {
+    const { name, value } = e.target;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: value
     });
+    
+    // Limpiar error cuando el usuario comience a escribir
+    if (error) setError('');
+  };
+
+  const handleEmailValidation = (isValid, message) => {
+    setEmailValidation({ isValid, message });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validación básica de formato de email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setError('Por favor ingresa un email válido');
+      return;
+    }
+    
+    // Validar contraseña mínima
+    if (!isLoginMode && formData.password.length < 6) {
+      setError('La contraseña debe tener al menos 6 caracteres');
+      return;
+    }
+    
+    // Validar nombre completo en registro
+    if (!isLoginMode && (!formData.displayName || formData.displayName.trim().length < 2)) {
+      setError('Por favor ingresa tu nombre completo');
+      return;
+    }
+    
     setLoading(true);
     setError('');
 
@@ -64,7 +97,45 @@ const AuthComponent = () => {
       } else {
         const result = await registerUser(formData.email, formData.password, formData.displayName);
         if (!result.success) {
-          setError(result.error);
+          // Manejar errores específicos
+          if (result.errorCode === 'email-already-exists') {
+            setError(
+              <div>
+                <p className="font-semibold text-red-700 mb-2">
+                  ❌ {result.error}
+                </p>
+                <button
+                  onClick={() => {
+                    setIsLoginMode(true);
+                    setError('');
+                  }}
+                  className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700"
+                >
+                  🔄 Cambiar a Iniciar Sesión
+                </button>
+              </div>
+            );
+          } else {
+            setError(result.error);
+          }
+        } else {
+          // Mostrar mensaje de éxito con instrucciones de verificación
+          setError('');
+          
+          // Crear mensaje de éxito más detallado
+          const successMessage = `🎉 ¡Cuenta creada exitosamente!\n\n📧 Se envió un email de verificación a: ${formData.email}\n\n✅ Ya puedes usar tu cuenta, pero te recomendamos verificar tu email para mayor seguridad.`;
+          alert(successMessage);
+          
+          // Limpiar formulario después del registro exitoso
+          setFormData({
+            email: '',
+            password: '',
+            displayName: '',
+            adminPassword: ''
+          });
+          
+          // Cambiar a modo login para que el usuario pueda iniciar sesión
+          setIsLoginMode(true);
         }
       }
     } catch (err) {
@@ -235,9 +306,19 @@ const AuthComponent = () => {
                 name="email"
                 value={formData.email}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  !emailValidation.isValid && formData.email 
+                    ? 'border-red-500 bg-red-50' 
+                    : 'border-gray-300'
+                }`}
                 required
+                placeholder="tu@email.com"
               />
+              {!isLoginMode && (
+                <div className="text-xs text-gray-500 mt-1">
+                  💡 Asegúrate de que tu email sea correcto - se enviará un enlace de verificación
+                </div>
+              )}
             </div>
 
             <div className="mb-6">

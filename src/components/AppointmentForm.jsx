@@ -2,9 +2,10 @@ import { useState, useCallback } from 'react';
 import { User, Clock, CreditCard, Check, ArrowLeft, ArrowRight, Calendar as CalendarIcon, AlertCircle } from 'lucide-react';
 import Modal from './Modal';
 import LoadingSpinner from './LoadingSpinner';
+import EmailValidator from './EmailValidator';
 import { useFormValidation } from '../hooks/useError';
 import { createAppointment } from '../services/firebaseService';
-import { getCurrentUser } from '../services/authService';
+import { getCurrentUser, checkEmailExists } from '../services/authService';
 
 const AppointmentForm = ({ isOpen, onClose, selectedDate, selectedTime, onSuccess }) => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -33,6 +34,11 @@ const AppointmentForm = ({ isOpen, onClose, selectedDate, selectedTime, onSucces
   });
 
   const [touched, setTouched] = useState({});
+  const [emailValidation, setEmailValidation] = useState({
+    isValid: true,
+    message: '',
+    canCreateAccount: true
+  });
 
   // Funciones de validación personalizadas para este formulario
   const validatePhone = useCallback((phone) => {
@@ -164,7 +170,13 @@ const AppointmentForm = ({ isOpen, onClose, selectedDate, selectedTime, onSucces
 
     // Clear any existing error for this field when user starts typing
     clearFieldError(field);
-  }, [clearFieldError]);
+    
+    // Si el campo es email y se está marcando crear cuenta, 
+    // desactivar la opción si el email ya existe
+    if (field === 'email' && createAccount && !emailValidation.canCreateAccount) {
+      setCreateAccount(false);
+    }
+  }, [clearFieldError, createAccount, emailValidation.canCreateAccount]);
 
   const formatPhoneNumber = (value) => {
     // Remove all non-digit characters
@@ -186,19 +198,28 @@ const AppointmentForm = ({ isOpen, onClose, selectedDate, selectedTime, onSucces
   };
 
   const handleBlur = (field) => {
-    setTouched(prev => ({
-      ...prev,
-      [field]: true
-    }));
+    setTouched(prev => ({ ...prev, [field]: true }));
     
-    // Validate field on blur
     const error = validateFormField(field, formData[field]);
     if (error) {
-      // Set error using the hook's validateField method with proper rules
-      const rules = [{ type: 'custom', message: error }];
-      validateField(field, formData[field], rules);
+      validateField(field, formData[field], [{ type: 'custom', message: error }]);
     }
   };
+
+  const handleEmailValidation = useCallback((isValid, message) => {
+    setEmailValidation({
+      isValid,
+      message,
+      canCreateAccount: isValid && !message.includes('ya está registrado')
+    });
+    
+    // Si el email ya existe y se había marcado crear cuenta, desmarcarlo
+    if (!isValid || message.includes('ya está registrado')) {
+      if (createAccount) {
+        setCreateAccount(false);
+      }
+    }
+  }, [createAccount]);
 
   const handleServiceSelect = (service) => {
     handleInputChange('service', service.name);
